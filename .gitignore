@@ -1,0 +1,18 @@
+# generated files
+.idea/
+
+
+# JetBrains files
+*.iml
+*.ipr
+*.iws
+
+
+# other library files
+github.com/
+
+
+# other project files
+.DS_Store
+
+
