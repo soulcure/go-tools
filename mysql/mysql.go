@@ -1,276 +1,68 @@
 package mysql
 
 import (
-	"database/sql"
-	"errors"
-	"fmt"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
-	"strconv"
+	"github.com/jmoiron/sqlx"
+	"github.com/sirupsen/logrus"
 )
 
-// SQLConnPool is DB pool struct
-type SQLConnPool struct {
-	DriverName     string
-	DataSourceName string
-	MaxOpenConn    int
-	MaxIdleConn    int
-	SqlDB          *sql.DB
+type Person struct {
+	UserId   int    `db:"id"`
+	Username string `db:"username"`
+	Password string `db:"password"`
+	Gender   int    `db:"gender"`
+	Email    string `db:"email"`
 }
 
-// InitMySQLPool func init DB pool
-func InitMySQLPool(host, database, user, password, charset string, maxOpenConns, maxIdleConns int) *SQLConnPool {
-	dataSourceName := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=%s&autocommit=true", user, password, host, database, charset)
-	db := &SQLConnPool{
-		DriverName:     "mysql",
-		DataSourceName: dataSourceName,
-		MaxOpenConn:    maxOpenConns,
-		MaxIdleConn:    maxIdleConns,
-	}
-	if err := db.Open(); err != nil {
-		log.Panicln("Init mysql pool failed.", err.Error())
-	}
-	return db
-}
+var db *sqlx.DB
 
-func (p *SQLConnPool) Open() error {
-	var err error
-	p.SqlDB, err = sql.Open(p.DriverName, p.DataSourceName)
+//mysqluser = "huxin001"
+//mysqlpass = "youmai@2018"
+//mysqlurls = "120.24.37.50:9906"
+//mysqldb = "/charge?charset=utf8&loc=Local"
+
+func init() {
+	//huxin001:youmai@2018@tcp(120.24.37.50:9906)/charge?charset=utf8&loc=Local
+	database, err := sqlx.Open("mysql", "huxin001:youmai@2018@tcp(120.24.37.50:9906)/charge?charset=utf8&loc=Local")
 	if err != nil {
-		return err
+		logrus.Error(err)
+		return
 	}
-	if err = p.SqlDB.Ping(); err != nil {
-		return err
-	}
-	p.SqlDB.SetMaxOpenConns(p.MaxOpenConn)
-	p.SqlDB.SetMaxIdleConns(p.MaxIdleConn)
-	return nil
+	db = database
 }
 
-// Close pool
-func (p *SQLConnPool) Close() error {
-	return p.SqlDB.Close()
-}
-
-// Get via pool
-func (p *SQLConnPool) Get(queryStr string, args ...interface{}) (map[string]interface{}, error) {
-	results, err := p.Query(queryStr, args...)
+func Insert(username, password, email string, gender int) bool {
+	r, err := db.Exec("insert into person(username, password, email,gender)values(?, ?, ?,?)", username, password, email, gender)
 	if err != nil {
-		return map[string]interface{}{}, err
+		logrus.Error(err)
+		return false
 	}
-	if len(results) <= 0 {
-		return map[string]interface{}{}, sql.ErrNoRows
-	}
-	if len(results) > 1 {
-		return map[string]interface{}{}, errors.New("sql: more than one rows")
-	}
-	return results[0], nil
-}
-
-// Query via pool
-func (p *SQLConnPool) Query(queryStr string, args ...interface{}) ([]map[string]interface{}, error) {
-	rows, err := p.SqlDB.Query(queryStr, args...)
+	id, err := r.LastInsertId()
 	if err != nil {
-		log.Println(err)
-		return []map[string]interface{}{}, err
+		logrus.Error(err)
+		return false
 	}
-	defer func() {
-		if err := rows.Close(); err != nil {
-			log.Println(err)
-		}
-	}()
-	columns, err := rows.ColumnTypes()
-	scanArgs := make([]interface{}, len(columns))
-	values := make([]sql.RawBytes, len(columns))
-	for i := range values {
-		scanArgs[i] = &values[i]
-	}
-	rowsMap := make([]map[string]interface{}, 0, 10)
-	for rows.Next() {
 
-		if err := rows.Scan(scanArgs...); err != nil {
-			log.Println(err)
-		}
-
-		rowMap := make(map[string]interface{})
-		for i, value := range values {
-			rowMap[columns[i].Name()] = bytes2RealType(value, columns[i])
-		}
-		rowsMap = append(rowsMap, rowMap)
-	}
-	if err = rows.Err(); err != nil {
-		return []map[string]interface{}{}, err
-	}
-	return rowsMap, nil
+	logrus.Debug("insert success:", id)
+	return true
 }
 
-func (p *SQLConnPool) Exec(sqlStr string, args ...interface{}) (sql.Result, error) {
-	return p.SqlDB.Exec(sqlStr, args...)
-}
-
-// Update via pool
-func (p *SQLConnPool) Update(updateStr string, args ...interface{}) (int64, error) {
-	result, err := p.Exec(updateStr, args...)
+func Update(gender int, email, username string) bool {
+	_, err := db.Exec("update person set gender=?,email=? where username=?", gender, email, username)
 	if err != nil {
-		return 0, err
+		logrus.Error(err)
+		return false
 	}
-	affect, err := result.RowsAffected()
-	return affect, err
+
+	logrus.Debug("update success:", username)
+	return true
 }
 
-// Insert via pool
-func (p *SQLConnPool) Insert(insertStr string, args ...interface{}) (int64, error) {
-	result, err := p.Exec(insertStr, args...)
+func Select(username, password string) (Person, error) {
+	var person Person
+	err := db.QueryRow("select * from person where username = ?,password=?", username, password).Scan(&person.UserId, &person.Username, &person.Password, &person.Gender, &person.Email)
 	if err != nil {
-		return 0, err
+		logrus.Error(err)
 	}
-	lastId, err := result.LastInsertId()
-	return lastId, err
-
-}
-
-// Delete via pool
-func (p *SQLConnPool) Delete(deleteStr string, args ...interface{}) (int64, error) {
-	result, err := p.Exec(deleteStr, args...)
-	if err != nil {
-		return 0, err
-	}
-	affect, err := result.RowsAffected()
-	return affect, err
-}
-
-// SQLConnTransaction is for transaction connection
-type SQLConnTransaction struct {
-	SQLTX *sql.Tx
-}
-
-// Begin transaction
-func (p *SQLConnPool) Begin() (*SQLConnTransaction, error) {
-	var oneSQLConnTransaction = &SQLConnTransaction{}
-	var err error
-	if pingErr := p.SqlDB.Ping(); pingErr == nil {
-		oneSQLConnTransaction.SQLTX, err = p.SqlDB.Begin()
-	}
-	return oneSQLConnTransaction, err
-}
-
-// Rollback transaction
-func (t *SQLConnTransaction) Rollback() error {
-	return t.SQLTX.Rollback()
-}
-
-// Commit transaction
-func (t *SQLConnTransaction) Commit() error {
-	return t.SQLTX.Commit()
-}
-
-// Get via transaction
-func (t *SQLConnTransaction) Get(queryStr string, args ...interface{}) (map[string]interface{}, error) {
-	results, err := t.Query(queryStr, args...)
-	if err != nil {
-		return map[string]interface{}{}, err
-	}
-	if len(results) <= 0 {
-		return map[string]interface{}{}, sql.ErrNoRows
-	}
-	if len(results) > 1 {
-		return map[string]interface{}{}, errors.New("sql: more than one rows")
-	}
-	return results[0], nil
-}
-
-// Query via transaction
-func (t *SQLConnTransaction) Query(queryStr string, args ...interface{}) ([]map[string]interface{}, error) {
-	rows, err := t.SQLTX.Query(queryStr, args...)
-	if err != nil {
-		log.Println(err)
-		return []map[string]interface{}{}, err
-	}
-
-	defer func() {
-		if err := rows.Close(); err != nil {
-			log.Println(err)
-		}
-	}()
-
-	columns, err := rows.ColumnTypes()
-	scanArgs := make([]interface{}, len(columns))
-	values := make([]sql.RawBytes, len(columns))
-	for i := range values {
-		scanArgs[i] = &values[i]
-	}
-	rowsMap := make([]map[string]interface{}, 0, 10)
-	for rows.Next() {
-		if err := rows.Scan(scanArgs...); err != nil {
-			log.Println(err)
-		}
-
-		rowMap := make(map[string]interface{})
-		for i, value := range values {
-			rowMap[columns[i].Name()] = bytes2RealType(value, columns[i])
-		}
-		rowsMap = append(rowsMap, rowMap)
-	}
-	if err = rows.Err(); err != nil {
-		return []map[string]interface{}{}, err
-	}
-	return rowsMap, nil
-}
-
-func (t *SQLConnTransaction) Exec(sqlStr string, args ...interface{}) (sql.Result, error) {
-	return t.SQLTX.Exec(sqlStr, args...)
-}
-
-// Update via transaction
-func (t *SQLConnTransaction) Update(updateStr string, args ...interface{}) (int64, error) {
-	result, err := t.Exec(updateStr, args...)
-	if err != nil {
-		return 0, err
-	}
-	affect, err := result.RowsAffected()
-	return affect, err
-}
-
-// Insert via transaction
-func (t *SQLConnTransaction) Insert(insertStr string, args ...interface{}) (int64, error) {
-	result, err := t.Exec(insertStr, args...)
-	if err != nil {
-		return 0, err
-	}
-	lastId, err := result.LastInsertId()
-	return lastId, err
-
-}
-
-// Delete via transaction
-func (t *SQLConnTransaction) Delete(deleteStr string, args ...interface{}) (int64, error) {
-	result, err := t.Exec(deleteStr, args...)
-	if err != nil {
-		return 0, err
-	}
-	affect, err := result.RowsAffected()
-	return affect, err
-}
-
-// bytes2RealType is to convert db type to code type
-func bytes2RealType(src []byte, column *sql.ColumnType) interface{} {
-	srcStr := string(src)
-	var result interface{}
-	switch column.DatabaseTypeName() {
-	case "BIT", "TINYINT", "SMALLINT", "INT":
-		result, _ = strconv.ParseInt(srcStr, 10, 64)
-	case "BIGINT":
-		result, _ = strconv.ParseUint(srcStr, 10, 64)
-	case "CHAR", "VARCHAR",
-		"TINY TEXT", "TEXT", "MEDIUM TEXT", "LONG TEXT",
-		"TINY BLOB", "MEDIUM BLOB", "BLOB", "LONG BLOB",
-		"JSON", "ENUM", "SET",
-		"YEAR", "DATE", "TIME", "TIMESTAMP", "DATETIME":
-		result = srcStr
-	case "FLOAT", "DOUBLE", "DECIMAL":
-		result, _ = strconv.ParseFloat(srcStr, 64)
-	default:
-		result = nil
-	}
-	return result
+	return person, err
 }
