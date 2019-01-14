@@ -5,7 +5,6 @@ import (
 	"../mysql"
 	"github.com/astaxie/beego/logs"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/dgrijalva/jwt-go/request"
 	"github.com/kataras/iris"
 	"github.com/sirupsen/logrus"
 	"net/http"
@@ -132,10 +131,10 @@ func loginHandler(ctx iris.Context) {
 }
 
 func tokenHandler(ctx iris.Context) {
-	token, err := request.ParseFromRequest(ctx.Request(), request.AuthorizationHeaderExtractor,
-		func(token *jwt.Token) (interface{}, error) {
-			return []byte(SecretKey), nil
-		})
+	tokenString := ctx.GetHeader("token")
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return []byte(SecretKey), nil
+	})
 
 	if err == nil {
 		if token.Valid {
