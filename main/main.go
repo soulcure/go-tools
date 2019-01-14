@@ -25,20 +25,6 @@ func internalServerError(ctx iris.Context) {
 	ctx.StatusCode(http.StatusRequestTimeout)
 }
 
-func before(ctx iris.Context) {
-	shareInformation := "this is a sharable information between handlers"
-
-	requestPath := ctx.Path()
-	logrus.Debug("Before the mainHandler: " + requestPath)
-	ctx.Values().Set("info", shareInformation)
-	ctx.Next() //继续执行下一个handler，在本例中是mainHandler。
-}
-
-func after(ctx iris.Context) {
-	requestPath := ctx.Path()
-	logrus.Debug("After the mainHandler: " + requestPath)
-}
-
 func registerHandler(ctx iris.Context) {
 	username := ctx.FormValue("username")
 	password := ctx.FormValue("password")
@@ -138,13 +124,14 @@ func tokenHandler(ctx iris.Context) {
 
 	if err == nil {
 		if token.Valid {
+			logs.Debug("Token is valid")
 			ctx.Next()
 		} else {
 			ctx.StatusCode(http.StatusUnauthorized)
 			var res models.ProtocolRsp
 			res.SetCode(models.TokenExp)
 			res.ResponseWriter(ctx)
-			logs.Debug("Token is not valid")
+			logs.Error("Token is not valid")
 		}
 	} else {
 		ctx.StatusCode(http.StatusUnauthorized)
@@ -152,7 +139,7 @@ func tokenHandler(ctx iris.Context) {
 		res.SetCode(models.NotLogin)
 		res.ResponseWriter(ctx)
 
-		logs.Debug("Unauthorized access to this resource")
+		logs.Error("Unauthorized access to this resource")
 	}
 
 }
@@ -190,19 +177,10 @@ func main() {
 	app.OnErrorCode(iris.StatusNotFound, notFound)
 	app.OnErrorCode(iris.StatusInternalServerError, internalServerError)
 
-	//将“before”处理程序注册为将要执行的第一个处理程序
-	//在所有域的路由上。
-	//或使用`UseGlobal`注册一个将跨子域触发的中间件。
-	app.Use(before)
-
-	//将“after”处理程序注册为将要执行的最后一个处理程序
-	//在所有域的路由'处理程序之后。
-	app.Done(after)
-
 	// register our routes.
 	app.Post("/register", registerHandler)
 	app.Post("/login", loginHandler)
-	app.Post("/api/update", tokenHandler, updateProfile, after)
+	app.Post("/api/update", tokenHandler, updateProfile)
 
 	if err := app.Run(iris.Addr(":8080")); err != nil {
 		panic(err)
