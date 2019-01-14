@@ -60,7 +60,7 @@ func Update(gender int, email, username string) bool {
 
 func Select(username, password string) (Person, error) {
 	var person Person
-	err := db.QueryRow("select * from person where username = ?,password=?", username, password).Scan(&person.UserId, &person.Username, &person.Password, &person.Gender, &person.Email)
+	err := db.QueryRow("select * from person where username = ? and password=?", username, password).Scan(&person.UserId, &person.Username, &person.Password, &person.Gender, &person.Email)
 	if err != nil {
 		logrus.Error(err)
 	}

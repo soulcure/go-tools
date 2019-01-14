@@ -7,9 +7,6 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/dgrijalva/jwt-go/request"
 	"github.com/kataras/iris"
-	"github.com/kataras/iris/sessions"
-	"github.com/kataras/iris/sessions/sessiondb/redis"
-	"github.com/kataras/iris/sessions/sessiondb/redis/service"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
@@ -76,7 +73,7 @@ func registerHandler(ctx iris.Context) {
 }
 
 func loginHandler(ctx iris.Context) {
-	db := redis.New(service.Config{
+	/*db := redis.New(service.Config{
 		Network:     "tcp",
 		Addr:        "127.0.0.1:6379",
 		Password:    "",
@@ -98,40 +95,39 @@ func loginHandler(ctx iris.Context) {
 
 	sess := sessions.New(sessions.Config{Cookie: "sessionscookieid", Expires: 45 * time.Minute})
 
-	sess.UseDatabase(db)
+	sess.UseDatabase(db)*/
 
 	username := ctx.FormValue("username")
 	password := ctx.FormValue("password")
 
 	if username != "" && password != "" {
+		if _, err := mysql.Select(username, password); err == nil {
+			token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+				"name": username,
+				"exp":  time.Now().Add(time.Hour * 72).Unix(),
+			})
 
-		if _, err := mysql.Select(username, password); err != nil {
-			logrus.Error("user select fail")
+			if t, err := token.SignedString([]byte(SecretKey)); err == nil {
+				logs.Debug(username, "set Token:", t)
+				//session
+				//s := sess.Start(ctx)
+				//s.Set(username, t)
+
+				var res models.ProtocolRsp
+				res.SetCode(models.OK)
+				res.Data = &models.LoginRsp{Token: t}
+				res.ResponseWriter(ctx)
+				return
+			}
+
 		}
-
-		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-			"name": username,
-			"exp":  time.Now().Add(time.Hour * 72).Unix(),
-		})
-
-		t, err := token.SignedString([]byte(SecretKey))
-		if err != nil {
-			logs.Error("Signed String:", err)
-		}
-		s := sess.Start(ctx)
-		s.Set(username, t)
-
-		logs.Debug(username, "set session:", s.GetString(username))
-
-		var res models.ProtocolRsp
-		res.SetCode(models.OK)
-		res.Data = &models.LoginRsp{Token: t}
-		res.ResponseWriter(ctx)
-	} else {
-		var res models.ProtocolRsp
-		res.SetCode(models.LoginErr)
-		res.ResponseWriter(ctx)
 	}
+
+	logrus.Error("user login fail")
+
+	var res models.ProtocolRsp
+	res.SetCode(models.LoginErr)
+	res.ResponseWriter(ctx)
 
 }
 
@@ -146,10 +142,17 @@ func tokenHandler(ctx iris.Context) {
 			ctx.Next()
 		} else {
 			ctx.StatusCode(http.StatusUnauthorized)
+			var res models.ProtocolRsp
+			res.SetCode(models.TokenExp)
+			res.ResponseWriter(ctx)
 			logs.Debug("Token is not valid")
 		}
 	} else {
 		ctx.StatusCode(http.StatusUnauthorized)
+		var res models.ProtocolRsp
+		res.SetCode(models.NotLogin)
+		res.ResponseWriter(ctx)
+
 		logs.Debug("Unauthorized access to this resource")
 	}
 
@@ -200,8 +203,7 @@ func main() {
 	// register our routes.
 	app.Post("/register", registerHandler)
 	app.Post("/login", loginHandler)
-	app.Post("/api", tokenHandler)
-	app.Post("/api/update", updateProfile)
+	app.Post("/api/update", tokenHandler, updateProfile, after)
 
 	if err := app.Run(iris.Addr(":8080")); err != nil {
 		panic(err)
