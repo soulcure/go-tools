@@ -16,13 +16,7 @@ type Person struct {
 
 var db *sqlx.DB
 
-//mysqluser = "huxin001"
-//mysqlpass = "youmai@2018"
-//mysqlurls = "120.24.37.50:9906"
-//mysqldb = "/charge?charset=utf8&loc=Local"
-
 func init() {
-	//huxin001:youmai@2018@tcp(120.24.37.50:9906)/charge?charset=utf8&loc=Local
 	database, err := sqlx.Open("mysql", "huxin001:youmai@2018@tcp(120.24.37.50:9906)/charge?charset=utf8&loc=Local")
 	if err != nil {
 		logrus.Error(err)

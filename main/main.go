@@ -18,11 +18,17 @@ const (
 
 func notFound(ctx iris.Context) {
 	ctx.StatusCode(http.StatusNotFound)
+	var res models.ProtocolRsp
+	res.SetCode(models.UnknownErr)
+	res.ResponseWriter(ctx)
 }
 
 //当出现错误的时候，再试一次
 func internalServerError(ctx iris.Context) {
 	ctx.StatusCode(http.StatusRequestTimeout)
+	var res models.ProtocolRsp
+	res.SetCode(models.UnknownErr)
+	res.ResponseWriter(ctx)
 }
 
 func registerHandler(ctx iris.Context) {
@@ -58,35 +64,11 @@ func registerHandler(ctx iris.Context) {
 }
 
 func loginHandler(ctx iris.Context) {
-	/*db := redis.New(service.Config{
-		Network:     "tcp",
-		Addr:        "127.0.0.1:6379",
-		Password:    "",
-		Database:    "",
-		MaxIdle:     0,
-		MaxActive:   10,
-		IdleTimeout: service.DefaultRedisIdleTimeout,
-		Prefix:      ""}) // optionally configure the bridge between your redis server
-
-	// use go routines to query the database
-	// db.Async(true)
-	// close connection when control+C/cmd+C
-	iris.RegisterOnInterrupt(func() {
-		if err := db.Close(); err != nil {
-			logrus.Error(err)
-
-		}
-	})
-
-	sess := sessions.New(sessions.Config{Cookie: "sessionscookieid", Expires: 45 * time.Minute})
-
-	sess.UseDatabase(db)*/
-
 	username := ctx.FormValue("username")
 	password := ctx.FormValue("password")
 
 	if username != "" && password != "" {
-		if _, err := mysql.Select(username, password); err == nil {
+		if person, err := mysql.Select(username, password); err == nil {
 			token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 				"name": username,
 				"exp":  time.Now().Add(time.Hour * 72).Unix(),
@@ -94,13 +76,9 @@ func loginHandler(ctx iris.Context) {
 
 			if t, err := token.SignedString([]byte(SecretKey)); err == nil {
 				logs.Debug(username, "set Token:", t)
-				//session
-				//s := sess.Start(ctx)
-				//s.Set(username, t)
-
 				var res models.ProtocolRsp
 				res.SetCode(models.OK)
-				res.Data = &models.LoginRsp{Token: t}
+				res.Data = &models.LoginRsp{Token: t, UserId: person.UserId, Username: person.Username, Email: person.Email, Gender: person.Gender}
 				res.ResponseWriter(ctx)
 				return
 			}
