@@ -3,7 +3,6 @@ package main
 import (
 	"../models"
 	"../mysql"
-	"github.com/astaxie/beego/logs"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/kataras/iris"
 	"github.com/sirupsen/logrus"
@@ -15,6 +14,14 @@ import (
 const (
 	SecretKey = "welcome to go server"
 )
+
+func init() {
+	logrus.SetLevel(logrus.TraceLevel)
+	logrus.SetFormatter(&logrus.TextFormatter{
+		ForceColors:   true,
+		FullTimestamp: true,
+	})
+}
 
 func notFound(ctx iris.Context) {
 	ctx.StatusCode(http.StatusNotFound)
@@ -75,7 +82,7 @@ func loginHandler(ctx iris.Context) {
 			})
 
 			if t, err := token.SignedString([]byte(SecretKey)); err == nil {
-				logs.Debug(username, "set Token:", t)
+				logrus.Debug(username, "set Token:", t)
 				var res models.ProtocolRsp
 				res.SetCode(models.OK)
 				res.Data = &models.LoginRsp{Token: t, UserId: person.UserId, Username: person.Username, Email: person.Email, Gender: person.Gender}
@@ -102,14 +109,14 @@ func tokenHandler(ctx iris.Context) {
 
 	if err == nil {
 		if token.Valid {
-			logs.Debug("Token is valid")
+			logrus.Debug("Token is valid")
 			ctx.Next()
 		} else {
 			ctx.StatusCode(http.StatusUnauthorized)
 			var res models.ProtocolRsp
 			res.SetCode(models.TokenExp)
 			res.ResponseWriter(ctx)
-			logs.Error("Token is not valid")
+			logrus.Error("Token is not valid")
 		}
 	} else {
 		ctx.StatusCode(http.StatusUnauthorized)
@@ -117,7 +124,7 @@ func tokenHandler(ctx iris.Context) {
 		res.SetCode(models.NotLogin)
 		res.ResponseWriter(ctx)
 
-		logs.Error("Unauthorized access to this resource")
+		logrus.Error("Unauthorized access to this resource")
 	}
 
 }

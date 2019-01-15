@@ -4,6 +4,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
+	"log"
 )
 
 type Person struct {
@@ -23,6 +24,7 @@ func init() {
 		return
 	}
 	db = database
+	log.Print("mysql init success")
 }
 
 func Insert(username, password, email string, gender int) bool {
@@ -58,5 +60,6 @@ func Select(username, password string) (Person, error) {
 	if err != nil {
 		logrus.Error(err)
 	}
+	logrus.Debug(person)
 	return person, err
 }
