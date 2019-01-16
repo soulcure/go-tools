@@ -3,6 +3,7 @@ package main
 import (
 	"../models"
 	"../mysql"
+	"../redis"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/kataras/iris"
 	"github.com/sirupsen/logrus"
@@ -82,7 +83,7 @@ func loginHandler(ctx iris.Context) {
 			})
 
 			if t, err := token.SignedString([]byte(SecretKey)); err == nil {
-				logrus.Debug(username, "set Token:", t)
+				logrus.Debug(username, "  set Token:", t)
 				var res models.ProtocolRsp
 				res.SetCode(models.OK)
 				res.Data = &models.LoginRsp{Token: t, UserId: person.UserId, Username: person.Username, Email: person.Email, Gender: person.Gender}
@@ -156,6 +157,8 @@ func updateProfile(ctx iris.Context) {
 }
 
 func main() {
+	redis.Test()
+
 	// the rest of the code stays the same.
 	app := iris.New()
 

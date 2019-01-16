@@ -2,7 +2,6 @@ package redis
 
 import (
 	"fmt"
-	"github.com/astaxie/beego/logs"
 	"github.com/garyburd/redigo/redis"
 	"github.com/sirupsen/logrus"
 	"log"
@@ -20,6 +19,7 @@ func init() {
 		Dial: func() (redis.Conn, error) {
 			conn, err := redis.Dial("tcp", "localhost:6379")
 			if err != nil {
+				log.Panic("redis init error")
 				return nil, err
 			}
 
@@ -34,7 +34,7 @@ func init() {
 	}
 }
 
-func SetString(key, value string) {
+func SetBytes(key string, value []byte) (interface{}, error) {
 	c := pool.Get()
 	defer func() {
 		if err := pool.Close(); err != nil {
@@ -42,14 +42,11 @@ func SetString(key, value string) {
 		}
 	}()
 
-	_, err := c.Do("Set", key, value)
-	if err != nil {
-		logrus.Error(err)
-		return
-	}
+	return c.Do("Set", key, value)
+
 }
 
-func GetString(key string) string {
+func GetBytes(key string) ([]byte, error) {
 	c := pool.Get()
 	defer func() {
 		if err := pool.Close(); err != nil {
@@ -57,15 +54,10 @@ func GetString(key string) string {
 		}
 	}()
 
-	r, err := redis.String(c.Do("Get", key))
-	if err != nil {
-		logrus.Error(err)
-		return ""
-	}
-	return r
+	return redis.Bytes(c.Do("Get", key))
 }
 
-func SetInt(key string, value int) {
+func SetString(key, value string) (interface{}, error) {
 	c := pool.Get()
 	defer func() {
 		if err := pool.Close(); err != nil {
@@ -73,14 +65,10 @@ func SetInt(key string, value int) {
 		}
 	}()
 
-	_, err := c.Do("Set", key, value)
-	if err != nil {
-		logrus.Error(err)
-		return
-	}
+	return c.Do("Set", key, value)
 }
 
-func GetInt(key string) int {
+func GetString(key string) (string, error) {
 	c := pool.Get()
 	defer func() {
 		if err := pool.Close(); err != nil {
@@ -88,15 +76,10 @@ func GetInt(key string) int {
 		}
 	}()
 
-	r, err := redis.Int(c.Do("Get", key))
-	if err != nil {
-		logrus.Error(err)
-		return 0
-	}
-	return r
+	return redis.String(c.Do("Get", key))
 }
 
-func SetBool(key string, value bool) {
+func SetInt(key string, value int) (interface{}, error) {
 	c := pool.Get()
 	defer func() {
 		if err := pool.Close(); err != nil {
@@ -104,14 +87,10 @@ func SetBool(key string, value bool) {
 		}
 	}()
 
-	_, err := c.Do("Set", key, value)
-	if err != nil {
-		logrus.Error(err)
-		return
-	}
+	return c.Do("Set", key, value)
 }
 
-func GetBool(key string) bool {
+func GetInt(key string) (int, error) {
 	c := pool.Get()
 	defer func() {
 		if err := pool.Close(); err != nil {
@@ -119,23 +98,10 @@ func GetBool(key string) bool {
 		}
 	}()
 
-	r, err := redis.Bool(c.Do("Get", key))
-	if err != nil {
-		logrus.Error(err)
-		return false
-	}
-	return r
+	return redis.Int(c.Do("Get", key))
 }
 
-func SetFloat32(key string, value float32) {
-	SetFloat64(key, float64(value))
-}
-
-func GetFloat32(key string) float32 {
-	return float32(GetFloat64(key))
-}
-
-func SetFloat64(key string, value float64) {
+func SetInt64(key string, value int64) (interface{}, error) {
 	c := pool.Get()
 	defer func() {
 		if err := pool.Close(); err != nil {
@@ -143,14 +109,10 @@ func SetFloat64(key string, value float64) {
 		}
 	}()
 
-	_, err := c.Do("Set", key, value)
-	if err != nil {
-		logrus.Error(err)
-		return
-	}
+	return c.Do("Set", key, value)
 }
 
-func GetFloat64(key string) float64 {
+func GetInt64(key string) (int64, error) {
 	c := pool.Get()
 	defer func() {
 		if err := pool.Close(); err != nil {
@@ -158,12 +120,172 @@ func GetFloat64(key string) float64 {
 		}
 	}()
 
-	r, err := redis.Float64(c.Do("Get", key))
+	return redis.Int64(c.Do("Get", key))
+}
+
+func SetBool(key string, value bool) (interface{}, error) {
+	c := pool.Get()
+	defer func() {
+		if err := pool.Close(); err != nil {
+			logrus.Error(err)
+		}
+	}()
+
+	return c.Do("Set", key, value)
+}
+
+func GetBool(key string) (bool, error) {
+	c := pool.Get()
+	defer func() {
+		if err := pool.Close(); err != nil {
+			logrus.Error(err)
+		}
+	}()
+
+	return redis.Bool(c.Do("Get", key))
+}
+
+func SetFloat32(key string, value float32) (interface{}, error) {
+	return SetFloat64(key, float64(value))
+}
+
+func GetFloat32(key string) (float32, error) {
+	v, err := GetFloat64(key)
+	return float32(v), err
+}
+
+func SetFloat64(key string, value float64) (interface{}, error) {
+	c := pool.Get()
+	defer func() {
+		if err := pool.Close(); err != nil {
+			logrus.Error(err)
+		}
+	}()
+
+	return c.Do("Set", key, value)
+}
+
+func GetFloat64(key string) (float64, error) {
+	c := pool.Get()
+	defer func() {
+		if err := pool.Close(); err != nil {
+			logrus.Error(err)
+		}
+	}()
+
+	return redis.Float64(c.Do("Get", key))
+}
+
+func DelKey(key string) (interface{}, error) {
+	c := pool.Get()
+	defer func() {
+		if err := pool.Close(); err != nil {
+			logrus.Error(err)
+		}
+	}()
+	return c.Do("DEL", key)
+}
+
+func ExpireKey(key string, seconds int64) (interface{}, error) {
+	c := pool.Get()
+	defer func() {
+		if err := pool.Close(); err != nil {
+			logrus.Error(err)
+		}
+	}()
+	return c.Do("EXPIRE", key, seconds)
+}
+
+func Keys(pattern string) ([]string, error) {
+	c := pool.Get()
+	defer func() {
+		if err := pool.Close(); err != nil {
+			logrus.Error(err)
+		}
+	}()
+	return redis.Strings(c.Do("KEYS", pattern))
+}
+
+func KeysByteSlices(pattern string) ([][]byte, error) {
+	c := pool.Get()
+	defer func() {
+		if err := pool.Close(); err != nil {
+			logrus.Error(err)
+		}
+	}()
+	return redis.ByteSlices(c.Do("KEYS", pattern))
+}
+
+// fieldValue 必须设置 tag ,如： Title  string `redis:"title"`
+func SetStruct(key string, fieldValue interface{}) (interface{}, error) {
+	c := pool.Get()
+	defer func() {
+		if err := pool.Close(); err != nil {
+			logrus.Error(err)
+		}
+	}()
+	return c.Do("HMSET", redis.Args{}.Add(key).AddFlat(fieldValue)...)
+}
+
+func GetStruct(key string, fieldValue interface{}) error {
+	c := pool.Get()
+	defer func() {
+		if err := pool.Close(); err != nil {
+			logrus.Error(err)
+		}
+	}()
+	r, err := redis.Values(c.Do("HGETALL", key))
 	if err != nil {
 		logrus.Error(err)
-		return 0
+		return err
 	}
-	return r
+
+	if e := redis.ScanStruct(r, fieldValue); e != nil {
+		logrus.Error(err)
+		return e
+	}
+
+	return err
+}
+
+func SetHashMap(key string, fieldValue map[string]interface{}) (interface{}, error) {
+	c := pool.Get()
+	defer func() {
+		if err := pool.Close(); err != nil {
+			logrus.Error(err)
+		}
+	}()
+	return c.Do("HMSET", redis.Args{}.Add(key).AddFlat(fieldValue)...)
+}
+
+func GetHashMapString(key string) (map[string]string, error) {
+	c := pool.Get()
+	defer func() {
+		if err := pool.Close(); err != nil {
+			logrus.Error(err)
+		}
+	}()
+	return redis.StringMap(c.Do("HGETALL", key))
+}
+
+func GetHashMapInt(key string) (map[string]int, error) {
+	c := pool.Get()
+	defer func() {
+		if err := pool.Close(); err != nil {
+			logrus.Error(err)
+		}
+	}()
+	return redis.IntMap(c.Do("HGETALL", key))
+}
+
+func GetHashMapInt64(key string) (map[string]int64, error) {
+	c := pool.Get()
+	defer func() {
+		if err := pool.Close(); err != nil {
+			logrus.Error(err)
+		}
+	}()
+	return redis.Int64Map(c.Do("HGETALL", key))
 }
 
 //获取订单号
@@ -178,12 +300,12 @@ func GetOrderNum() string {
 	}()
 
 	if num, err := redis.Int64(c.Do("INCR", "orderKey")); err != nil {
-		logs.Error("redis orderKey get value error:", err)
+		logrus.Error("redis orderKey get value error:", err)
 		rand.Seed(time.Now().Unix())
 		orderNo = "E" + time.Now().Format("20060102150405") + string(rand.Intn(100))
 	} else {
 		numStr := fmt.Sprintf("%04d", num)
-		logs.Debug("order INCR:", numStr)
+		logrus.Debug("order INCR:", numStr)
 		orderNo = time.Now().Format("20060102150405") + numStr
 	}
 
