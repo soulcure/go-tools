@@ -1,9 +1,9 @@
 package main
 
 import (
-	"./models"
-	"./mysql"
-	"./redis"
+	"dev/models"
+	"dev/mysql"
+	"dev/redis"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/kataras/iris"
 	"github.com/sirupsen/logrus"
