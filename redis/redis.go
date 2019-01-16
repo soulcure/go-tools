@@ -34,6 +34,46 @@ func init() {
 	}
 }
 
+func DelKey(key string) (interface{}, error) {
+	c := pool.Get()
+	defer func() {
+		if err := pool.Close(); err != nil {
+			logrus.Error(err)
+		}
+	}()
+	return c.Do("DEL", key)
+}
+
+func ExpireKey(key string, seconds int64) (interface{}, error) {
+	c := pool.Get()
+	defer func() {
+		if err := pool.Close(); err != nil {
+			logrus.Error(err)
+		}
+	}()
+	return c.Do("EXPIRE", key, seconds)
+}
+
+func GetKeys(pattern string) ([]string, error) {
+	c := pool.Get()
+	defer func() {
+		if err := pool.Close(); err != nil {
+			logrus.Error(err)
+		}
+	}()
+	return redis.Strings(c.Do("KEYS", pattern))
+}
+
+func KeysByteSlices(pattern string) ([][]byte, error) {
+	c := pool.Get()
+	defer func() {
+		if err := pool.Close(); err != nil {
+			logrus.Error(err)
+		}
+	}()
+	return redis.ByteSlices(c.Do("KEYS", pattern))
+}
+
 func SetBytes(key string, value []byte) (interface{}, error) {
 	c := pool.Get()
 	defer func() {
@@ -174,46 +214,6 @@ func GetFloat64(key string) (float64, error) {
 	}()
 
 	return redis.Float64(c.Do("Get", key))
-}
-
-func DelKey(key string) (interface{}, error) {
-	c := pool.Get()
-	defer func() {
-		if err := pool.Close(); err != nil {
-			logrus.Error(err)
-		}
-	}()
-	return c.Do("DEL", key)
-}
-
-func ExpireKey(key string, seconds int64) (interface{}, error) {
-	c := pool.Get()
-	defer func() {
-		if err := pool.Close(); err != nil {
-			logrus.Error(err)
-		}
-	}()
-	return c.Do("EXPIRE", key, seconds)
-}
-
-func Keys(pattern string) ([]string, error) {
-	c := pool.Get()
-	defer func() {
-		if err := pool.Close(); err != nil {
-			logrus.Error(err)
-		}
-	}()
-	return redis.Strings(c.Do("KEYS", pattern))
-}
-
-func KeysByteSlices(pattern string) ([][]byte, error) {
-	c := pool.Get()
-	defer func() {
-		if err := pool.Close(); err != nil {
-			logrus.Error(err)
-		}
-	}()
-	return redis.ByteSlices(c.Do("KEYS", pattern))
 }
 
 // fieldValue 必须设置 tag ,如： Title  string `redis:"title"`
