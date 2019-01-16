@@ -6,7 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func Test() {
+func Test1() {
 	c := pool.Get()
 	defer func() {
 		if err := pool.Close(); err != nil {
@@ -82,4 +82,18 @@ func Test() {
 		return
 	}
 	fmt.Printf("%v\n", albums)
+}
+
+type Person struct {
+	Title  string `redis:"title"`
+	Author string `redis:"author"`
+	Body   string `redis:"body"`
+}
+
+func Test2(key string, p *Person) {
+
+	if err := GetStruct(key, p); err != nil {
+		fmt.Printf("%v\n", err)
+	}
+
 }

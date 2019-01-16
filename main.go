@@ -1,9 +1,9 @@
 package main
 
 import (
-	"../models"
-	"../mysql"
-	"../redis"
+	"./models"
+	"./mysql"
+	"./redis"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/kataras/iris"
 	"github.com/sirupsen/logrus"
@@ -72,6 +72,10 @@ func registerHandler(ctx iris.Context) {
 }
 
 func loginHandler(ctx iris.Context) {
+	var p redis.Person
+	redis.Test2("id1", &p)
+	logrus.Debug(p)
+
 	username := ctx.FormValue("username")
 	password := ctx.FormValue("password")
 
@@ -157,7 +161,7 @@ func updateProfile(ctx iris.Context) {
 }
 
 func main() {
-	redis.Test()
+	//redis.Test1()
 
 	// the rest of the code stays the same.
 	app := iris.New()
