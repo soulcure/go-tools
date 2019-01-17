@@ -87,6 +87,8 @@ func Test1() {
 
 func UserInfoSetRedis(key string, u *mysql.Person) {
 	if _, err := SetStruct(key, u); err != nil {
-		logrus.Error("UserInfoSetRedis error:", err)
+		logrus.Error("user info set to redis  error:", err)
+	} else {
+		logrus.Debug("user info set to redis success")
 	}
 }

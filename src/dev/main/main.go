@@ -53,8 +53,8 @@ func registerHandler(ctx iris.Context) {
 
 	if userName != "" && password != "" && email != "" && genderStr != "" {
 		userId := uuid.Must(uuid.NewV4()).String()
-
-		if id, err := mysql.Insert(userId, userName, password, email, gender); err != nil {
+		logrus.Debug("user register userId:", userId)
+		if id, err := mysql.Insert(userId, userName, password, email, gender); err == nil {
 			logrus.Debug("user register success")
 			user := &mysql.Person{Id: id, UserId: userId, UserName: userName, Password: password, Email: email, Gender: gender}
 			logrus.Debug("UserInfoSetRedis key:", userId)
