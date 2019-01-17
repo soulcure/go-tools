@@ -36,8 +36,9 @@ func init() {
 
 func DelKey(key string) (interface{}, error) {
 	c := pool.Get()
+
 	defer func() {
-		if err := pool.Close(); err != nil {
+		if err := c.Close(); err != nil {
 			logrus.Error(err)
 		}
 	}()
@@ -47,7 +48,7 @@ func DelKey(key string) (interface{}, error) {
 func ExpireKey(key string, seconds int64) (interface{}, error) {
 	c := pool.Get()
 	defer func() {
-		if err := pool.Close(); err != nil {
+		if err := c.Close(); err != nil {
 			logrus.Error(err)
 		}
 	}()
@@ -57,7 +58,7 @@ func ExpireKey(key string, seconds int64) (interface{}, error) {
 func GetKeys(pattern string) ([]string, error) {
 	c := pool.Get()
 	defer func() {
-		if err := pool.Close(); err != nil {
+		if err := c.Close(); err != nil {
 			logrus.Error(err)
 		}
 	}()
@@ -67,7 +68,7 @@ func GetKeys(pattern string) ([]string, error) {
 func KeysByteSlices(pattern string) ([][]byte, error) {
 	c := pool.Get()
 	defer func() {
-		if err := pool.Close(); err != nil {
+		if err := c.Close(); err != nil {
 			logrus.Error(err)
 		}
 	}()
@@ -77,7 +78,7 @@ func KeysByteSlices(pattern string) ([][]byte, error) {
 func SetBytes(key string, value []byte) (interface{}, error) {
 	c := pool.Get()
 	defer func() {
-		if err := pool.Close(); err != nil {
+		if err := c.Close(); err != nil {
 			logrus.Error(err)
 		}
 	}()
@@ -89,7 +90,7 @@ func SetBytes(key string, value []byte) (interface{}, error) {
 func GetBytes(key string) ([]byte, error) {
 	c := pool.Get()
 	defer func() {
-		if err := pool.Close(); err != nil {
+		if err := c.Close(); err != nil {
 			logrus.Error(err)
 		}
 	}()
@@ -100,7 +101,7 @@ func GetBytes(key string) ([]byte, error) {
 func SetString(key, value string) (interface{}, error) {
 	c := pool.Get()
 	defer func() {
-		if err := pool.Close(); err != nil {
+		if err := c.Close(); err != nil {
 			logrus.Error(err)
 		}
 	}()
@@ -111,7 +112,7 @@ func SetString(key, value string) (interface{}, error) {
 func GetString(key string) (string, error) {
 	c := pool.Get()
 	defer func() {
-		if err := pool.Close(); err != nil {
+		if err := c.Close(); err != nil {
 			logrus.Error(err)
 		}
 	}()
@@ -122,7 +123,7 @@ func GetString(key string) (string, error) {
 func SetInt(key string, value int) (interface{}, error) {
 	c := pool.Get()
 	defer func() {
-		if err := pool.Close(); err != nil {
+		if err := c.Close(); err != nil {
 			logrus.Error(err)
 		}
 	}()
@@ -133,7 +134,7 @@ func SetInt(key string, value int) (interface{}, error) {
 func GetInt(key string) (int, error) {
 	c := pool.Get()
 	defer func() {
-		if err := pool.Close(); err != nil {
+		if err := c.Close(); err != nil {
 			logrus.Error(err)
 		}
 	}()
@@ -144,7 +145,7 @@ func GetInt(key string) (int, error) {
 func SetInt64(key string, value int64) (interface{}, error) {
 	c := pool.Get()
 	defer func() {
-		if err := pool.Close(); err != nil {
+		if err := c.Close(); err != nil {
 			logrus.Error(err)
 		}
 	}()
@@ -155,7 +156,7 @@ func SetInt64(key string, value int64) (interface{}, error) {
 func GetInt64(key string) (int64, error) {
 	c := pool.Get()
 	defer func() {
-		if err := pool.Close(); err != nil {
+		if err := c.Close(); err != nil {
 			logrus.Error(err)
 		}
 	}()
@@ -166,7 +167,7 @@ func GetInt64(key string) (int64, error) {
 func SetBool(key string, value bool) (interface{}, error) {
 	c := pool.Get()
 	defer func() {
-		if err := pool.Close(); err != nil {
+		if err := c.Close(); err != nil {
 			logrus.Error(err)
 		}
 	}()
@@ -177,7 +178,7 @@ func SetBool(key string, value bool) (interface{}, error) {
 func GetBool(key string) (bool, error) {
 	c := pool.Get()
 	defer func() {
-		if err := pool.Close(); err != nil {
+		if err := c.Close(); err != nil {
 			logrus.Error(err)
 		}
 	}()
@@ -197,7 +198,7 @@ func GetFloat32(key string) (float32, error) {
 func SetFloat64(key string, value float64) (interface{}, error) {
 	c := pool.Get()
 	defer func() {
-		if err := pool.Close(); err != nil {
+		if err := c.Close(); err != nil {
 			logrus.Error(err)
 		}
 	}()
@@ -208,7 +209,7 @@ func SetFloat64(key string, value float64) (interface{}, error) {
 func GetFloat64(key string) (float64, error) {
 	c := pool.Get()
 	defer func() {
-		if err := pool.Close(); err != nil {
+		if err := c.Close(); err != nil {
 			logrus.Error(err)
 		}
 	}()
@@ -220,7 +221,7 @@ func GetFloat64(key string) (float64, error) {
 func SetStruct(key string, fieldValue interface{}) (interface{}, error) {
 	c := pool.Get()
 	defer func() {
-		if err := pool.Close(); err != nil {
+		if err := c.Close(); err != nil {
 			logrus.Error(err)
 		}
 	}()
@@ -230,7 +231,7 @@ func SetStruct(key string, fieldValue interface{}) (interface{}, error) {
 func GetStruct(key string, fieldValue interface{}) error {
 	c := pool.Get()
 	defer func() {
-		if err := pool.Close(); err != nil {
+		if err := c.Close(); err != nil {
 			logrus.Error(err)
 		}
 	}()
@@ -251,7 +252,7 @@ func GetStruct(key string, fieldValue interface{}) error {
 func SetHashMap(key string, fieldValue map[string]interface{}) (interface{}, error) {
 	c := pool.Get()
 	defer func() {
-		if err := pool.Close(); err != nil {
+		if err := c.Close(); err != nil {
 			logrus.Error(err)
 		}
 	}()
@@ -261,7 +262,7 @@ func SetHashMap(key string, fieldValue map[string]interface{}) (interface{}, err
 func GetHashMapString(key string) (map[string]string, error) {
 	c := pool.Get()
 	defer func() {
-		if err := pool.Close(); err != nil {
+		if err := c.Close(); err != nil {
 			logrus.Error(err)
 		}
 	}()
@@ -271,7 +272,7 @@ func GetHashMapString(key string) (map[string]string, error) {
 func GetHashMapInt(key string) (map[string]int, error) {
 	c := pool.Get()
 	defer func() {
-		if err := pool.Close(); err != nil {
+		if err := c.Close(); err != nil {
 			logrus.Error(err)
 		}
 	}()
@@ -281,7 +282,7 @@ func GetHashMapInt(key string) (map[string]int, error) {
 func GetHashMapInt64(key string) (map[string]int64, error) {
 	c := pool.Get()
 	defer func() {
-		if err := pool.Close(); err != nil {
+		if err := c.Close(); err != nil {
 			logrus.Error(err)
 		}
 	}()
@@ -294,7 +295,7 @@ func GetOrderNum() string {
 
 	c := pool.Get()
 	defer func() {
-		if err := pool.Close(); err != nil {
+		if err := c.Close(); err != nil {
 			logrus.Error(err)
 		}
 	}()

@@ -85,10 +85,18 @@ func Test1() {
 	fmt.Printf("%v\n", albums)
 }
 
-func UserInfoSetRedis(key string, u *mysql.Person) {
-	if _, err := SetStruct(key, u); err != nil {
-		logrus.Error("user info set to redis  error:", err)
+func SetUserInfo(key string, u *mysql.Person) error {
+	logrus.Debug("SetUserInfo key:", key)
+	var err error
+	if _, err = SetStruct(key, u); err != nil {
+		logrus.Error("set user info error:", err)
 	} else {
-		logrus.Debug("user info set to redis success")
+		logrus.Debug("set user info success")
 	}
+	return err
+}
+
+func GetUserInfo(key string, u *mysql.Person) error {
+	logrus.Debug("GetUserInfo key:", key)
+	return GetStruct(key, u)
 }

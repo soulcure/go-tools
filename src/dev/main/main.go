@@ -57,23 +57,25 @@ func registerHandler(ctx iris.Context) {
 		if id, err := mysql.Insert(userId, userName, password, email, gender); err == nil {
 			logrus.Debug("user register success")
 			user := &mysql.Person{Id: id, UserId: userId, UserName: userName, Password: password, Email: email, Gender: gender}
-			logrus.Debug("UserInfoSetRedis key:", userId)
-			redis.UserInfoSetRedis(userId, user)
+			if e := redis.SetUserInfo(userId, user); e == nil {
+				var res models.ProtocolRsp
+				res.SetCode(models.OK)
+				res.ResponseWriter(ctx)
+				return
+			}
 
-			var res models.ProtocolRsp
-			res.SetCode(models.OK)
-			res.ResponseWriter(ctx)
 		} else {
 			var res models.ProtocolRsp
 			res.SetCode(models.UserNameErr)
 			res.ResponseWriter(ctx)
+			return
 		}
 
-	} else {
-		var res models.ProtocolRsp
-		res.SetCode(models.RegisterErr)
-		res.ResponseWriter(ctx)
 	}
+
+	var res models.ProtocolRsp
+	res.SetCode(models.RegisterErr)
+	res.ResponseWriter(ctx)
 
 }
 
@@ -137,7 +139,7 @@ func tokenHandler(ctx iris.Context) {
 }
 
 func updateProfile(ctx iris.Context) {
-	username := ctx.FormValue("username")
+	userId := ctx.FormValue("userId")
 	email := ctx.FormValue("email")
 	genderStr := ctx.FormValue("gender")
 	gender, err := strconv.Atoi(genderStr)
@@ -147,18 +149,33 @@ func updateProfile(ctx iris.Context) {
 	}
 
 	if email != "" && genderStr != "" {
-		if err := mysql.Update(gender, email, username); err != nil {
-			logrus.Debug("user register success")
-			var res models.ProtocolRsp
-			res.SetCode(models.OK)
-			res.ResponseWriter(ctx)
+		if err := mysql.Update(userId, gender, email); err == nil {
+			logrus.Debug("user update profile success")
+			var e error
+
+			user := &mysql.Person{}
+			e = redis.GetUserInfo(userId, user)
+
+			logrus.Debug("user profile:", user)
+
+			user.Email = email
+			user.Gender = gender
+			e = redis.SetUserInfo(userId, user)
+
+			if e == nil {
+				var res models.ProtocolRsp
+				res.SetCode(models.OK)
+				res.ResponseWriter(ctx)
+				return
+			}
 		}
 
-	} else {
-		var res models.ProtocolRsp
-		res.SetCode(models.ParamErr)
-		res.ResponseWriter(ctx)
 	}
+
+	logrus.Error("user update Profile  fail")
+	var res models.ProtocolRsp
+	res.SetCode(models.ParamErr)
+	res.ResponseWriter(ctx)
 
 }
 

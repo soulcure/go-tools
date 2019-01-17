@@ -40,12 +40,12 @@ func Insert(userId, userName, password, email string, gender int) (int64, error)
 
 }
 
-func Update(gender int, email, userName string) error {
-	_, err := db.Exec("update person set gender=?,email=? where user_name=?", gender, email, userName)
+func Update(userId string, gender int, email string) error {
+	_, err := db.Exec("update person set gender=?,email=? where user_id=?", gender, email, userId)
 	if err != nil {
 		logrus.Error(err)
 	} else {
-		logrus.Debug("update success:", userName)
+		logrus.Debug("update success:", userId)
 	}
 
 	return err
@@ -53,7 +53,7 @@ func Update(gender int, email, userName string) error {
 
 func Select(userName, password string) (Person, error) {
 	var person Person
-	err := db.QueryRow("select * from person where user_name = ? and password=?", userName, password).Scan(&person.UserId, &person.UserName, &person.Password, &person.Gender, &person.Email)
+	err := db.QueryRow("select * from person where user_name = ? and password=?", userName, password).Scan(&person.Id, &person.UserId, &person.UserName, &person.Password, &person.Gender, &person.Email)
 	if err != nil {
 		logrus.Error(err)
 	} else {
