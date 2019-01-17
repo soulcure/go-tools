@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"dev/mysql"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
 	"github.com/sirupsen/logrus"
@@ -84,16 +85,8 @@ func Test1() {
 	fmt.Printf("%v\n", albums)
 }
 
-type Person struct {
-	Title  string `redis:"title"`
-	Author string `redis:"author"`
-	Body   string `redis:"body"`
-}
-
-func Test2(key string, p *Person) {
-
-	if err := GetStruct(key, p); err != nil {
-		fmt.Printf("%v\n", err)
+func UserInfoSetRedis(key string, u *mysql.Person) {
+	if _, err := SetStruct(key, u); err != nil {
+		logrus.Error("UserInfoSetRedis error:", err)
 	}
-
 }

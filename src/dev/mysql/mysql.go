@@ -8,11 +8,12 @@ import (
 )
 
 type Person struct {
-	UserId   int    `db:"id"`
-	Username string `db:"username"`
-	Password string `db:"password"`
-	Gender   int    `db:"gender"`
-	Email    string `db:"email"`
+	Id       int64  `db:"id" redis:"id,omitempty"`
+	UserId   string `db:"user_id" redis:"user_id"`
+	UserName string `db:"user_name" redis:"user_name"`
+	Password string `db:"password" redis:"password"`
+	Gender   int    `db:"gender" redis:"email"`
+	Email    string `db:"email" redis:"gender"`
 }
 
 var db *sqlx.DB
@@ -27,39 +28,31 @@ func init() {
 	log.Print("mysql init success")
 }
 
-func Insert(username, password, email string, gender int) bool {
-	r, err := db.Exec("insert into person(username, password, email,gender)values(?, ?, ?,?)", username, password, email, gender)
+func Insert(userId, userName, password, email string, gender int) (int64, error) {
+	r, err := db.Exec("insert into person(user_id,user_name, password, email,gender)values(?,?, ?, ?,?)", userId, userName, password, email, gender)
 	if err != nil {
 		logrus.Error(err)
-		return false
 	}
-	id, err := r.LastInsertId()
-	if err != nil {
-		logrus.Error(err)
-		return false
-	}
-
-	logrus.Debug("insert success:", id)
-	return true
+	logrus.Debug("Insert success:", userName)
+	return r.LastInsertId()
 }
 
-func Update(gender int, email, username string) bool {
-	_, err := db.Exec("update person set gender=?,email=? where username=?", gender, email, username)
+func Update(gender int, email, userName string) error {
+	_, err := db.Exec("update person set gender=?,email=? where user_name=?", gender, email, userName)
 	if err != nil {
 		logrus.Error(err)
-		return false
 	}
 
-	logrus.Debug("update success:", username)
-	return true
+	logrus.Debug("update success:", userName)
+	return err
 }
 
-func Select(username, password string) (Person, error) {
+func Select(userName, password string) (Person, error) {
 	var person Person
-	err := db.QueryRow("select * from person where username = ? and password=?", username, password).Scan(&person.UserId, &person.Username, &person.Password, &person.Gender, &person.Email)
+	err := db.QueryRow("select * from person where user_name = ? and password=?", userName, password).Scan(&person.UserId, &person.UserName, &person.Password, &person.Gender, &person.Email)
 	if err != nil {
 		logrus.Error(err)
 	}
-	logrus.Debug(person)
+	logrus.Debug("select user success:", person)
 	return person, err
 }

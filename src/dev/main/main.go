@@ -6,6 +6,7 @@ import (
 	"dev/redis"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/kataras/iris"
+	"github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
@@ -40,7 +41,7 @@ func internalServerError(ctx iris.Context) {
 }
 
 func registerHandler(ctx iris.Context) {
-	username := ctx.FormValue("username")
+	userName := ctx.FormValue("username")
 	password := ctx.FormValue("password")
 	email := ctx.FormValue("email")
 	genderStr := ctx.FormValue("gender")
@@ -50,9 +51,14 @@ func registerHandler(ctx iris.Context) {
 		logrus.Error(err)
 	}
 
-	if username != "" && password != "" && email != "" && genderStr != "" {
-		if ok := mysql.Insert(username, password, email, gender); ok {
+	if userName != "" && password != "" && email != "" && genderStr != "" {
+		userId := uuid.Must(uuid.NewV4()).String()
+
+		if id, err := mysql.Insert(userId, userName, password, email, gender); err != nil {
 			logrus.Debug("user register success")
+			user := &mysql.Person{Id: id, UserId: userId, UserName: userName, Password: password, Email: email, Gender: gender}
+			logrus.Debug("UserInfoSetRedis key:", userId)
+			redis.UserInfoSetRedis(userId, user)
 
 			var res models.ProtocolRsp
 			res.SetCode(models.OK)
@@ -72,10 +78,6 @@ func registerHandler(ctx iris.Context) {
 }
 
 func loginHandler(ctx iris.Context) {
-	var p redis.Person
-	redis.Test2("id1", &p)
-	logrus.Debug(p)
-
 	username := ctx.FormValue("username")
 	password := ctx.FormValue("password")
 
@@ -90,7 +92,7 @@ func loginHandler(ctx iris.Context) {
 				logrus.Debug(username, "  set Token:", t)
 				var res models.ProtocolRsp
 				res.SetCode(models.OK)
-				res.Data = &models.LoginRsp{Token: t, UserId: person.UserId, Username: person.Username, Email: person.Email, Gender: person.Gender}
+				res.Data = &models.LoginRsp{Token: t, UserId: person.UserId, Username: person.UserName, Email: person.Email, Gender: person.Gender}
 				res.ResponseWriter(ctx)
 				return
 			}
@@ -145,7 +147,7 @@ func updateProfile(ctx iris.Context) {
 	}
 
 	if email != "" && genderStr != "" {
-		if ok := mysql.Update(gender, email, username); ok {
+		if err := mysql.Update(gender, email, username); err != nil {
 			logrus.Debug("user register success")
 			var res models.ProtocolRsp
 			res.SetCode(models.OK)
@@ -161,8 +163,6 @@ func updateProfile(ctx iris.Context) {
 }
 
 func main() {
-	//redis.Test1()
-
 	// the rest of the code stays the same.
 	app := iris.New()
 
