@@ -8,7 +8,9 @@ import (
 	"github.com/kataras/iris"
 	"github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
+	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 )
@@ -46,6 +48,11 @@ func registerHandler(ctx iris.Context) {
 	email := ctx.FormValue("email")
 	genderStr := ctx.FormValue("gender")
 	gender, err := strconv.Atoi(genderStr)
+
+	ctx.Application().Logger().Info("Request path: %s", ctx.Path())
+	ctx.Application().Logger().Infof("Request path: %+v", ctx)
+	ctx.Application().Logger().Debug("Request path: %+v", ctx)
+
 	if err != nil {
 		gender = 0
 		logrus.Error(err)
@@ -179,9 +186,35 @@ func updateProfile(ctx iris.Context) {
 
 }
 
+// Get a filename based on the date, just for the sugar.
+func todayFilename() string {
+	today := time.Now().Format("Jan 02 2006")
+	return today + ".txt"
+}
+
+func newLogFile() *os.File {
+	filename := todayFilename()
+	// Open the file, this will append to the today's file if server restarted.
+	f, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		panic(err)
+	}
+
+	return f
+}
+
 func main() {
+	f := newLogFile()
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Printf("close log file error: %s", err)
+		}
+	}()
+
 	// the rest of the code stays the same.
 	app := iris.New()
+
+	app.Logger().SetOutput(f)
 
 	app.OnErrorCode(iris.StatusNotFound, notFound)
 	app.OnErrorCode(iris.StatusInternalServerError, internalServerError)
@@ -191,8 +224,12 @@ func main() {
 	app.Post("/login", loginHandler)
 	app.Post("/api/update", tokenHandler, updateProfile)
 
-	if err := app.Run(iris.Addr(":8080")); err != nil {
-		panic(err)
+	app.Logger().SetLevel("debug")
+
+	config := iris.WithConfiguration(iris.YAML("./config/iris.yml"))
+
+	if err := app.Run(iris.Addr(":8080"), config); err != nil {
+		logrus.Error(err)
 	}
 
 }
