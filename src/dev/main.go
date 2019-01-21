@@ -188,7 +188,7 @@ func updateProfile(ctx iris.Context) {
 
 // Get a filename based on the date, just for the sugar.
 func todayFilename() string {
-	today := time.Now().Format("Jan 02 2006")
+	today := time.Now().Format("2006-01-02")
 	return today + ".txt"
 }
 
