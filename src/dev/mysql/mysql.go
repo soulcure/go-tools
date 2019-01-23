@@ -16,10 +16,12 @@ type Person struct {
 	Email    string `db:"email" redis:"gender"`
 }
 
+const dbName = "huxin001:youmai@2018@tcp(120.24.37.50:9906)/charge?charset=utf8&loc=Local"
+
 var db *sqlx.DB
 
 func init() {
-	database, err := sqlx.Open("mysql", "huxin001:youmai@2018@tcp(120.24.37.50:9906)/charge?charset=utf8&loc=Local")
+	database, err := sqlx.Open("mysql", dbName)
 	if err != nil {
 		logrus.Error(err)
 		return
@@ -29,7 +31,8 @@ func init() {
 }
 
 func Insert(userId, userName, password, email string, gender int) (int64, error) {
-	r, err := db.Exec("insert into person(user_id,user_name, password, email,gender)values(?,?, ?, ?,?)", userId, userName, password, email, gender)
+	r, err := db.Exec("insert into person(user_id,user_name, password, email,gender)values(?,?, ?, ?,?)",
+		userId, userName, password, email, gender)
 	if err != nil {
 		logrus.Error(err)
 		return 0, err
@@ -53,7 +56,8 @@ func Update(userId string, gender int, email string) error {
 
 func Select(userName, password string) (Person, error) {
 	var person Person
-	err := db.QueryRow("select * from person where user_name = ? and password=?", userName, password).Scan(&person.Id, &person.UserId, &person.UserName, &person.Password, &person.Gender, &person.Email)
+	row := db.QueryRow("select * from person where user_name = ? and password=?", userName, password)
+	err := row.Scan(&person.Id, &person.UserId, &person.UserName, &person.Password, &person.Gender, &person.Email)
 	if err != nil {
 		logrus.Error(err)
 	} else {
