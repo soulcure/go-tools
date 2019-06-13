@@ -101,7 +101,7 @@ func loginHandler(ctx iris.Context) {
 				logrus.Debug(username, "  set Token:", t)
 				var res models.ProtocolRsp
 				res.SetCode(models.OK)
-				res.Data = &models.LoginRsp{Token: t, UserId: person.UserId, Username: person.UserName, Email: person.Email, Gender: person.Gender}
+				res.Data = &models.LoginRsp{Token: t, Id: person.Id, UserId: person.UserId, Username: person.UserName, Email: person.Email, Gender: person.Gender}
 				res.ResponseWriter(ctx)
 				return
 			}
