@@ -12,7 +12,6 @@ const (
 	NotLogin    = -4003 //未登录
 	TokenExp    = -4004 //token失效
 	ParamErr    = -4005 //请求参数异常
-	UserNameErr = -4006 //注册用户名重复
 	UnknownErr  = -4201 //未知异常
 
 )
@@ -24,7 +23,6 @@ var msg = map[int]string{
 	NotLogin:    "未登录",
 	TokenExp:    "token失效",
 	ParamErr:    "请求参数异常",
-	UserNameErr: "注册用户名重复",
 	UnknownErr:  "未知异常",
 }
 

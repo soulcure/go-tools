@@ -64,7 +64,7 @@ func registerHandler(ctx iris.Context) {
 		if id, err := mysql.Insert(userId, userName, password, email, gender); err == nil {
 			logrus.Debug("user register success")
 			user := &mysql.Person{Id: id, UserId: userId, UserName: userName, Password: password, Email: email, Gender: gender}
-			if e := redis.SetUserInfo(userId, user); e == nil {
+			if _, e := redis.SetStruct(userId, user); e == nil {
 				var res models.ProtocolRsp
 				res.SetCode(models.OK)
 				res.ResponseWriter(ctx)
@@ -73,7 +73,8 @@ func registerHandler(ctx iris.Context) {
 
 		} else {
 			var res models.ProtocolRsp
-			res.SetCode(models.UserNameErr)
+			res.Code = models.RegisterErr
+			res.Msg = err.Error()
 			res.ResponseWriter(ctx)
 			return
 		}
@@ -161,7 +162,7 @@ func updateProfile(ctx iris.Context) {
 			var e error
 
 			user := &mysql.Person{}
-			e = redis.GetUserInfo(userId, user)
+			e = redis.GetStruct(userId, user)
 
 			logrus.Debug("user profile:", user)
 

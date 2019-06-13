@@ -34,7 +34,7 @@ func Insert(userId, userName, password, email string, gender int) (int64, error)
 	r, err := db.Exec("insert into person(user_id,user_name, password, email,gender)values(?,?, ?, ?,?)",
 		userId, userName, password, email, gender)
 	if err != nil {
-		logrus.Error(err)
+		logrus.Error("mysql insert " + err.Error())
 		return 0, err
 	} else {
 		logrus.Debug("Insert success:", userName)
