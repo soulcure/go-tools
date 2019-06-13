@@ -1,8 +1,8 @@
 package mysql
 
 import (
+	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 	"log"
 )
@@ -16,12 +16,12 @@ type Person struct {
 	Email    string `db:"email" redis:"gender"`
 }
 
-const dbName = "huxin001:youmai@2018@tcp(120.24.37.50:9906)/charge?charset=utf8&loc=Local"
+const dbName = "root:123456@tcp(localhost:3306)/nuuinfo?charset=utf8&loc=Local"
 
-var db *sqlx.DB
+var db *sql.DB
 
 func init() {
-	database, err := sqlx.Open("mysql", dbName)
+	database, err := sql.Open("mysql", dbName)
 	if err != nil {
 		logrus.Error(err)
 		return

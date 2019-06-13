@@ -15,4 +15,7 @@ github.com/
 # other project files
 .DS_Store
 
+# log file
+*.txt
+
 
