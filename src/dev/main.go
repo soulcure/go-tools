@@ -156,7 +156,7 @@ func updateProfile(ctx iris.Context) {
 		logrus.Error(err)
 	}
 
-	if email != "" && genderStr != "" {
+	if userId != "" && email != "" {
 		if err := mysql.Update(userId, gender, email); err == nil {
 			logrus.Debug("user update profile success")
 			var e error

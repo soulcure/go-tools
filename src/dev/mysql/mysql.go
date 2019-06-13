@@ -46,7 +46,7 @@ func Insert(userId, userName, password, email string, gender int) (int64, error)
 func Update(userId string, gender int, email string) error {
 	_, err := db.Exec("update person set gender=?,email=? where user_id=?", gender, email, userId)
 	if err != nil {
-		logrus.Error(err)
+		logrus.Error("mysql update " + err.Error())
 	} else {
 		logrus.Debug("update success:", userId)
 	}
@@ -59,7 +59,7 @@ func Select(userName, password string) (Person, error) {
 	row := db.QueryRow("select * from person where user_name = ? and password=?", userName, password)
 	err := row.Scan(&person.Id, &person.UserId, &person.UserName, &person.Password, &person.Gender, &person.Email)
 	if err != nil {
-		logrus.Error(err)
+		logrus.Error("mysql select " + err.Error())
 	} else {
 		logrus.Debug("select user success:", person)
 	}
