@@ -234,7 +234,7 @@ func main() {
 
 	config := iris.WithConfiguration(iris.YAML("./config/iris.yml"))
 
-	if err := app.Run(iris.Server(&http.Server{Addr: ":9090"}), config); err != nil {
+	if err := app.Run(iris.Server(&http.Server{Addr: "119.23.74.49:9090"}), config); err != nil {
 		logrus.Error(err)
 	}
 
