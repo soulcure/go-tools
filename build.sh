@@ -1,4 +1,3 @@
-PWD=`pwd`
-echo $PWD
-export GOPATH=$PWD
+export GOPATH=$GOPATH:${PWD}
+echo GOPATH
 go build  -o ./bin/go-tools  dev
