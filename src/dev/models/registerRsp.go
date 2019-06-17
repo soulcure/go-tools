@@ -1,5 +1,8 @@
 package models
 
 type RegisterRsp struct {
-	Token string `json:"token"`
+	Uuid     string `json:"uuid"`
+	UserName string `json:"username"`
+	Email    string `json:"email"`
+	PassWord string `json:"password"`
 }

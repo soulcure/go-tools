@@ -1,7 +1,6 @@
 package redis
 
 import (
-	"dev/mysql"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
 	"github.com/sirupsen/logrus"
@@ -83,20 +82,4 @@ func Test1() {
 		return
 	}
 	fmt.Printf("%v\n", albums)
-}
-
-func SetUserInfo(key string, u *mysql.Person) error {
-	logrus.Debug("SetUserInfo key:", key)
-	var err error
-	if _, err = SetStruct(key, u); err != nil {
-		logrus.Error("set user info error:", err)
-	} else {
-		logrus.Debug("set user info success")
-	}
-	return err
-}
-
-func GetUserInfo(key string, u *mysql.Person) error {
-	logrus.Debug("GetUserInfo key:", key)
-	return GetStruct(key, u)
 }

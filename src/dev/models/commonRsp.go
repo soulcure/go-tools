@@ -6,43 +6,49 @@ import (
 )
 
 const (
-	OK          = 0
-	LoginErr    = -4001 //登录失败
-	RegisterErr = -4002 //注册失败
-	NotLogin    = -4003 //未登录
-	TokenExp    = -4004 //token失效
-	ParamErr    = -4005 //请求参数异常
-	UnknownErr  = -4201 //未知异常
+	OK              = 0
+	RegisterErrCode = -4001 //注册失败
+	LoginErrCode    = -4002 //登录失败
+	NotLoginCode    = -4003 //未登录
+	TokenExpCode    = -4004 //token失效
+	ParamErrCode    = -4005 //请求参数异常
+	NoFoundErrCode  = -4201 //未知异常
+	UnknownErrCode  = -4202 //未知异常
 
 )
 
-var msg = map[int]string{
-	OK:          "请求成功",
-	LoginErr:    "登录失败",
-	RegisterErr: "注册失败",
-	NotLogin:    "未登录",
-	TokenExp:    "token失效",
-	ParamErr:    "请求参数异常",
-	UnknownErr:  "未知异常",
-}
+const (
+	SUCCESS = "success"
+
+	RegisterUserNameEmptyErr  = "Registered username is empty"
+	RegisterUserNameFormatErr = "Registered username format error:Number + letter does not limit capitalization 6-30 digits"
+
+	RegisterEmailEmptyErr  = "Registered email is empty"
+	RegisterEmailFormatErr = "Registered email format error:Number + letter + symbol 6-30 digits"
+
+	RegisterMobileEmptyErr  = "Registered mobile is empty"
+	RegisterMobileFormatErr = "Registered mobile format error"
+
+	RegisterPassWordEmptyErr  = "Registered password is empty"
+	RegisterPassWordFormatErr = "Registered password format error:Number + letter + symbol 6-30 digits"
+
+	LoginErrUserNameOrEmailEmptyErr = "Login username or email is empty"
+	LoginErrPassWordEmptyErr        = "Login password is empty"
+	LoginErrPassWordFormatErr       = "Login password format error:Number + letter + symbol 6-30 digits"
+
+	LoginUserNameFormatErr = "login username format error:Number + letter does not limit capitalization 6-30 digits"
+	LoginEmailFormatErr    = "login email format error:Number + letter + symbol 6-30 digits"
+
+	TokenErr        = "Token Error"
+	TokenExpiredErr = "Token Expired"
+	NoFoundErr      = "NoFound Error"
+	UnknownErr      = "Unknown Error"
+)
 
 type ProtocolRsp struct {
 	Code int         `json:"code"`
 	Msg  string      `json:"msg"`
 	Data interface{} `json:"data,omitempty"`
-}
-
-func Msg(code int) string {
-	str, ok := msg[code]
-	if ok {
-		return str
-	}
-	return msg[UnknownErr]
-}
-
-func (json *ProtocolRsp) SetCode(code int) {
-	json.Code = code
-	json.Msg = Msg(code)
 }
 
 func (json *ProtocolRsp) ResponseWriter(ctx iris.Context) {

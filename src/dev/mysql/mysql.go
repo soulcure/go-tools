@@ -7,16 +7,17 @@ import (
 	"log"
 )
 
-type Person struct {
-	Id       int64  `db:"id" redis:"id,omitempty"`
-	UserId   string `db:"user_id" redis:"user_id"`
-	UserName string `db:"user_name" redis:"user_name"`
-	Password string `db:"password" redis:"password"`
-	Gender   int    `db:"gender" redis:"email"`
-	Email    string `db:"email" redis:"gender"`
+type Account struct {
+	AccountId int    `db:"account_id" redis:"account_id,omitempty"`
+	Uuid      string `db:"uuid" redis:"uuid"`
+	UserName  string `db:"username" redis:"username"`
+	Mobile    string `db:"mobile" redis:"mobile"`
+	Email     string `db:"email" redis:"email"`
+	Iso       string `db:"iso" redis:"iso"`
+	Password  string `db:"password" redis:"password"`
 }
 
-const dbName = "root:123456@tcp(localhost:3306)/nuuinfo?charset=utf8&loc=Local"
+const dbName = "root:123456@tcp(localhost:3306)/nuu_db?charset=utf8&loc=Local"
 
 var db *sql.DB
 
@@ -30,14 +31,15 @@ func init() {
 	log.Print("mysql init success")
 }
 
-func Insert(userId, userName, password, email string, gender int) (int64, error) {
-	r, err := db.Exec("insert into person(user_id,user_name, password, email,gender)values(?,?, ?, ?,?)",
-		userId, userName, password, email, gender)
+//插入新注册用户数据
+func RegisterInsert(uuid, username, email, mobile, iso, password string) (int64, error) {
+	r, err := db.Exec("insert into account(uuid,username,email,mobile,iso,password)values(?,?,?,?,?,?)",
+		uuid, username, email, mobile, iso, password)
 	if err != nil {
-		logrus.Error("mysql insert " + err.Error())
+		logrus.Error("mysql register insert " + err.Error())
 		return 0, err
 	} else {
-		logrus.Debug("Insert success:", userName)
+		logrus.Debug("mysql register insert success:", username)
 		return r.LastInsertId()
 	}
 
@@ -54,15 +56,23 @@ func Update(userId string, gender int, email string) error {
 	return err
 }
 
-func Select(userName, password string) (Person, error) {
-	var person Person
-	row := db.QueryRow("select * from person where user_name = ? and password=?", userName, password)
-	err := row.Scan(&person.Id, &person.UserId, &person.UserName, &person.Password, &person.Gender, &person.Email)
+func AccountLogin(userName, email, password string) (Account, error) {
+	var account Account
+
+	var row *sql.Row
+	if userName != "" {
+		row = db.QueryRow("select * from account where username = ? and password=?", userName, password)
+	} else {
+		row = db.QueryRow("select * from account where email = ? and password=?", email, password)
+	}
+
+	err := row.Scan(&account.AccountId, &account.Uuid, &account.UserName,
+		&account.Mobile, &account.Email, &account.Iso, &account.Password)
 	if err != nil {
 		logrus.Error("mysql select " + err.Error())
 	} else {
-		logrus.Debug("select user success:", person)
+		logrus.Debug("select user success:", account)
 	}
 
-	return person, err
+	return account, err
 }

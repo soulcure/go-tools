@@ -4,6 +4,7 @@ import (
 	"dev/models"
 	"dev/mysql"
 	"dev/redis"
+	"dev/utils"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/kataras/iris"
 	"github.com/satori/go.uuid"
@@ -30,7 +31,8 @@ func init() {
 func notFound(ctx iris.Context) {
 	ctx.StatusCode(http.StatusNotFound)
 	var res models.ProtocolRsp
-	res.SetCode(models.UnknownErr)
+	res.Code = models.NoFoundErrCode
+	res.Msg = models.NoFoundErr
 	res.ResponseWriter(ctx)
 }
 
@@ -38,84 +40,90 @@ func notFound(ctx iris.Context) {
 func internalServerError(ctx iris.Context) {
 	ctx.StatusCode(http.StatusRequestTimeout)
 	var res models.ProtocolRsp
-	res.SetCode(models.UnknownErr)
+	res.Code = models.UnknownErrCode
+	res.Msg = models.UnknownErr
 	res.ResponseWriter(ctx)
 }
 
+func test(ctx iris.Context) {
+	ctx.Application().Logger().Info("Request path: %s", ctx.Path())
+	ctx.Application().Logger().Infof("Request path: %+v", ctx)
+	ctx.Application().Logger().Debug("Request path: %+v", ctx)
+	var res models.ProtocolRsp
+	res.Code = models.OK
+	res.Msg = models.SUCCESS
+	res.ResponseWriter(ctx)
+}
+
+//用户注册处理函数
 func registerHandler(ctx iris.Context) {
-	userName := ctx.FormValue("username")
-	password := ctx.FormValue("password")
+	username := ctx.FormValue("username")
 	email := ctx.FormValue("email")
-	genderStr := ctx.FormValue("gender")
-	gender, err := strconv.Atoi(genderStr)
+	mobile := ctx.FormValue("mobile")
+	iso := ctx.FormValue("iso")
+	password := ctx.FormValue("password")
 
 	ctx.Application().Logger().Info("Request path: %s", ctx.Path())
 	ctx.Application().Logger().Infof("Request path: %+v", ctx)
 	ctx.Application().Logger().Debug("Request path: %+v", ctx)
 
-	if err != nil {
-		gender = 0
-		logrus.Error(err)
-	}
-
-	if userName != "" && password != "" && email != "" && genderStr != "" {
+	if checkRegisterFormat(ctx, username, email, mobile, iso, password) {
 		userId := uuid.Must(uuid.NewV4()).String()
-		logrus.Debug("user register userId:", userId)
-		if id, err := mysql.Insert(userId, userName, password, email, gender); err == nil {
+		logrus.Debug("user register uuid:", userId)
+		if _, err := mysql.RegisterInsert(userId, username, email, mobile, iso, password); err == nil {
 			logrus.Debug("user register success")
-			user := &mysql.Person{Id: id, UserId: userId, UserName: userName, Password: password, Email: email, Gender: gender}
-			if _, e := redis.SetStruct(userId, user); e == nil {
-				var res models.ProtocolRsp
-				res.SetCode(models.OK)
-				res.ResponseWriter(ctx)
-				return
-			}
+			var res models.ProtocolRsp
+			res.Code = models.OK
+			res.Msg = models.SUCCESS
+			res.Data = &models.RegisterRsp{Uuid: userId, UserName: username, Email: email, PassWord: password}
+			res.ResponseWriter(ctx)
 
 		} else {
 			var res models.ProtocolRsp
-			res.Code = models.RegisterErr
+			res.Code = models.RegisterErrCode
 			res.Msg = err.Error()
 			res.ResponseWriter(ctx)
-			return
 		}
 
 	}
-
-	var res models.ProtocolRsp
-	res.SetCode(models.RegisterErr)
-	res.ResponseWriter(ctx)
 
 }
 
 func loginHandler(ctx iris.Context) {
 	username := ctx.FormValue("username")
+	email := ctx.FormValue("email")
 	password := ctx.FormValue("password")
 
-	if username != "" && password != "" {
-		if person, err := mysql.Select(username, password); err == nil {
+	if checkLoginFormat(ctx, username, email, password) {
+		if account, err := mysql.AccountLogin(username, email, password); err == nil {
+			var name string
+			if username != "" {
+				name = username
+			} else {
+				name = email
+			}
+
 			token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-				"name": username,
+				"name": name,
 				"exp":  time.Now().Add(time.Hour * 72).Unix(),
 			})
 
-			if t, err := token.SignedString([]byte(SecretKey)); err == nil {
-				logrus.Debug(username, "  set Token:", t)
-				var res models.ProtocolRsp
-				res.SetCode(models.OK)
-				res.Data = &models.LoginRsp{Token: t, Id: person.Id, UserId: person.UserId, Username: person.UserName, Email: person.Email, Gender: person.Gender}
-				res.ResponseWriter(ctx)
-				return
+			if token, err := token.SignedString([]byte(SecretKey)); err == nil {
+				logrus.Debug(username, "  set Token:", token)
+
+				if _, e := redis.SetStruct(account.Uuid, account); e == nil {
+					var res models.ProtocolRsp
+					res.Code = models.OK
+					res.Msg = models.SUCCESS
+					res.Data = &models.LoginRsp{Token: token, Uuid: account.Uuid}
+					res.ResponseWriter(ctx)
+					return
+				}
+
 			}
 
 		}
 	}
-
-	logrus.Error("user login fail")
-
-	var res models.ProtocolRsp
-	res.SetCode(models.LoginErr)
-	res.ResponseWriter(ctx)
-
 }
 
 func tokenHandler(ctx iris.Context) {
@@ -131,14 +139,16 @@ func tokenHandler(ctx iris.Context) {
 		} else {
 			ctx.StatusCode(http.StatusUnauthorized)
 			var res models.ProtocolRsp
-			res.SetCode(models.TokenExp)
+			res.Code = models.TokenExpCode
+			res.Msg = models.TokenExpiredErr
 			res.ResponseWriter(ctx)
 			logrus.Error("Token is not valid")
 		}
 	} else {
 		ctx.StatusCode(http.StatusUnauthorized)
 		var res models.ProtocolRsp
-		res.SetCode(models.NotLogin)
+		res.Code = models.NotLoginCode
+		res.Msg = models.TokenErr
 		res.ResponseWriter(ctx)
 
 		logrus.Error("Unauthorized access to this resource")
@@ -161,30 +171,24 @@ func updateProfile(ctx iris.Context) {
 			logrus.Debug("user update profile success")
 			var e error
 
-			user := &mysql.Person{}
+			user := &mysql.Account{}
 			e = redis.GetStruct(userId, user)
 
 			logrus.Debug("user profile:", user)
 
 			user.Email = email
-			user.Gender = gender
-			e = redis.SetUserInfo(userId, user)
+			_, e = redis.SetStruct(userId, user)
 
 			if e == nil {
 				var res models.ProtocolRsp
-				res.SetCode(models.OK)
+				res.Code = models.OK
+				res.Msg = models.SUCCESS
 				res.ResponseWriter(ctx)
 				return
 			}
 		}
 
 	}
-
-	logrus.Error("user update Profile  fail")
-	var res models.ProtocolRsp
-	res.SetCode(models.ParamErr)
-	res.ResponseWriter(ctx)
-
 }
 
 // Get a filename based on the date, just for the sugar.
@@ -221,6 +225,7 @@ func main() {
 	app.OnErrorCode(iris.StatusInternalServerError, internalServerError)
 
 	// register our routes.
+	app.Get("/test", test)
 	app.Post("/register", registerHandler)
 	app.Post("/login", loginHandler)
 	app.Post("/api/update", tokenHandler, updateProfile)
@@ -233,4 +238,102 @@ func main() {
 		logrus.Error(err)
 	}
 
+}
+
+func checkRegisterFormat(ctx iris.Context, username, email, mobile, iso, password string) bool {
+	if username == "" {
+		var res models.ProtocolRsp
+		res.Code = models.RegisterErrCode
+		res.Msg = models.RegisterUserNameEmptyErr
+		res.ResponseWriter(ctx)
+		return false
+	} else if !utils.IsUserName(username) {
+		var res models.ProtocolRsp
+		res.Code = models.RegisterErrCode
+		res.Msg = models.RegisterUserNameFormatErr
+		res.ResponseWriter(ctx)
+		return false
+	}
+	if email == "" {
+		var res models.ProtocolRsp
+		res.Code = models.RegisterErrCode
+		res.Msg = models.RegisterEmailEmptyErr
+		res.ResponseWriter(ctx)
+		return false
+	} else if !utils.IsEmail(email) {
+		var res models.ProtocolRsp
+		res.Code = models.RegisterErrCode
+		res.Msg = models.RegisterEmailFormatErr
+		res.ResponseWriter(ctx)
+		return false
+	}
+
+	if mobile == "" || iso == "" {
+		var res models.ProtocolRsp
+		res.Code = models.RegisterErrCode
+		res.Msg = models.RegisterMobileEmptyErr
+		res.ResponseWriter(ctx)
+		return false
+	} else if !utils.IsMobile(mobile, iso) {
+		var res models.ProtocolRsp
+		res.Code = models.RegisterErrCode
+		res.Msg = models.RegisterMobileFormatErr
+		res.ResponseWriter(ctx)
+		return false
+	}
+
+	if password == "" {
+		var res models.ProtocolRsp
+		res.Code = models.RegisterErrCode
+		res.Msg = models.RegisterPassWordEmptyErr
+		res.ResponseWriter(ctx)
+		return false
+	} else if !utils.IsPwd(password) {
+		var res models.ProtocolRsp
+		res.Code = models.RegisterErrCode
+		res.Msg = models.RegisterPassWordFormatErr
+		res.ResponseWriter(ctx)
+		return false
+	}
+
+	return true
+}
+
+func checkLoginFormat(ctx iris.Context, username, email, password string) bool {
+	if password == "" {
+		var res models.ProtocolRsp
+		res.Code = models.LoginErrCode
+		res.Msg = models.LoginErrPassWordEmptyErr
+		res.ResponseWriter(ctx)
+		return false
+
+	} else if !utils.IsPwd(password) {
+		var res models.ProtocolRsp
+		res.Code = models.LoginErrCode
+		res.Msg = models.LoginErrPassWordFormatErr
+		res.ResponseWriter(ctx)
+		return false
+	}
+
+	if username == "" || email == "" {
+		var res models.ProtocolRsp
+		res.Code = models.LoginErrCode
+		res.Msg = models.LoginErrUserNameOrEmailEmptyErr
+		res.ResponseWriter(ctx)
+		return false
+	} else if username == "" && !utils.IsEmail(email) {
+		var res models.ProtocolRsp
+		res.Code = models.LoginErrCode
+		res.Msg = models.LoginEmailFormatErr
+		res.ResponseWriter(ctx)
+		return false
+	} else if email == "" && !utils.IsUserName(username) {
+		var res models.ProtocolRsp
+		res.Code = models.LoginErrCode
+		res.Msg = models.LoginUserNameFormatErr
+		res.ResponseWriter(ctx)
+		return false
+	}
+
+	return true
 }
