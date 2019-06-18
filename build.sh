@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-if [[ ! -f build ]]; then
+if [[ ! -f build.sh ]]; then
 echo 'build must be run within its container folder' 1>&2
 exit 1
 fi
