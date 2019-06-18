@@ -1,5 +1,7 @@
 # generated files
 .idea/
+bin/
+pkg/
 
 
 # JetBrains files

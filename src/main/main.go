@@ -1,19 +1,19 @@
 package main
 
 import (
-	"dev/models"
-	"dev/mysql"
-	"dev/redis"
-	"dev/utils"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/kataras/iris"
 	"github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"log"
+	"models"
+	"mysql"
 	"net/http"
 	"os"
+	"redis"
 	"strconv"
 	"time"
+	"utils"
 )
 
 const (
@@ -232,9 +232,18 @@ func main() {
 
 	app.Logger().SetLevel("debug")
 
-	config := iris.WithConfiguration(iris.YAML("./config/iris.yml"))
+	config := iris.WithConfiguration(iris.Configuration{
+		DisableInterruptHandler:           false,
+		DisablePathCorrection:             false,
+		EnablePathEscape:                  false,
+		FireMethodNotAllowed:              false,
+		DisableBodyConsumptionOnUnmarshal: false,
+		DisableAutoFireStatusCode:         false,
+		TimeFormat:                        "Mon, 02 Jan 2006 15:04:05 GMT",
+		Charset:                           "UTF-8",
+	})
 
-	if err := app.Run(iris.Server(&http.Server{Addr: "119.23.74.49:8880"}), config); err != nil {
+	if err := app.Run(iris.Server(&http.Server{Addr: ":8880"}), config); err != nil {
 		logrus.Error(err)
 	}
 
