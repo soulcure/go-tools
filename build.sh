@@ -10,4 +10,4 @@ dist=go_main
 export GOPATH=$GOPATH:${PWD}
 echo $GOPATH
 
-go build -o bin/${dist} main
+go build -o ./bin/${dist} main
