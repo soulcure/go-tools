@@ -17,7 +17,8 @@ type Account struct {
 	Password  string `db:"password" redis:"password"`
 }
 
-const dbName = "root:123456@tcp(localhost:3306)/nuu_db?charset=utf8&loc=Local"
+//const dbName = "root:123456@tcp(localhost:3306)/nuu_db?charset=utf8&loc=Local"
+const dbName = "root:qw84265@tcp(119.23.74.49:3306)/nuu_db?charset=utf8&loc=Local"
 
 var db *sql.DB
 

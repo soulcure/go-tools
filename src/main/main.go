@@ -118,6 +118,12 @@ func loginHandler(ctx iris.Context) {
 					res.Data = &models.LoginRsp{Token: token, Uuid: account.Uuid}
 					res.ResponseWriter(ctx)
 					return
+				} else {
+					var res models.ProtocolRsp
+					res.Code = models.LoginErrCode
+					res.Msg = e.Error()
+					res.ResponseWriter(ctx)
+					return
 				}
 
 			}
@@ -320,15 +326,9 @@ func checkLoginFormat(ctx iris.Context, username, email, password string) bool {
 		res.ResponseWriter(ctx)
 		return false
 
-	} else if !utils.IsPwd(password) {
-		var res models.ProtocolRsp
-		res.Code = models.LoginErrCode
-		res.Msg = models.LoginErrPassWordFormatErr
-		res.ResponseWriter(ctx)
-		return false
 	}
 
-	if username == "" || email == "" {
+	if username == "" && email == "" {
 		var res models.ProtocolRsp
 		res.Code = models.LoginErrCode
 		res.Msg = models.LoginErrUserNameOrEmailEmptyErr
