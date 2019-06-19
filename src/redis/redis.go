@@ -52,9 +52,10 @@ func init() {
 				return nil, err
 			}
 
-			if redisConfig.Redis.Password != "" {
+			password := redisConfig.Redis.Password
+			if password != "" {
 				//验证密码
-				if _, authErr := conn.Do("AUTH", "123456"); authErr != nil {
+				if _, authErr := conn.Do("AUTH", password); authErr != nil {
 					return nil, authErr
 				}
 			}
@@ -63,7 +64,6 @@ func init() {
 			return conn, err
 		},
 	}
-	pool.Get()
 }
 
 func getConnURL(info *InfoRedis) (url string) {

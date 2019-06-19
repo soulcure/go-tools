@@ -49,6 +49,12 @@ func test(ctx iris.Context) {
 	ctx.Application().Logger().Info("Request path: %s", ctx.Path())
 	ctx.Application().Logger().Infof("Request path: %+v", ctx)
 	ctx.Application().Logger().Debug("Request path: %+v", ctx)
+	if r, err := redis.SetInt("test", 1); err != nil {
+		logrus.Error(err)
+	} else {
+		logrus.Debug(r)
+	}
+
 	var res models.ProtocolRsp
 	res.Code = models.OK
 	res.Msg = models.SUCCESS
