@@ -2,10 +2,28 @@ package mysql
 
 import (
 	"database/sql"
+	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
 	"log"
+	"os"
 )
+
+type DBConfig struct {
+	Mysql DBInfo `yaml:"mysql"`
+}
+
+//数据库账号配置
+type DBInfo struct {
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
+	Database string `yaml:"database"`
+	Charset  string `yaml:"charset"`
+}
 
 type Account struct {
 	AccountId int    `db:"account_id" redis:"account_id,omitempty"`
@@ -17,19 +35,31 @@ type Account struct {
 	Password  string `db:"password" redis:"password"`
 }
 
-//const dbName = "root:123456@tcp(localhost:3306)/nuu_db?charset=utf8&loc=Local"
-const dbName = "root:qw84265@tcp(119.23.74.49:3306)/nuu_db?charset=utf8&loc=Local"
-
-var db *sql.DB
+var (
+	db       *sql.DB
+	dbConfig DBConfig
+)
 
 func init() {
+	path := "./config/db.yml"
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		panic("db config file does not exist")
+	}
+
+	data, _ := ioutil.ReadFile(path)
+	if err := yaml.Unmarshal(data, &dbConfig); err != nil {
+		log.Panic("db config yaml Unmarshal error ")
+	}
+
+	dbName := getConnURL(&dbConfig.Mysql)
+
 	database, err := sql.Open("mysql", dbName)
 	if err != nil {
-		logrus.Error(err)
+		log.Panic("mysql can not connect")
 		return
 	}
 	db = database
-	log.Print("mysql init success")
+	log.Print("mysql connect at ", dbName)
 }
 
 //插入新注册用户数据
@@ -76,4 +106,9 @@ func AccountLogin(userName, email, password string) (Account, error) {
 	}
 
 	return account, err
+}
+
+func getConnURL(info *DBInfo) (url string) {
+	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s",
+		info.User, info.Password, info.Host, info.Port, info.Database, info.Charset)
 }

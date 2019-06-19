@@ -4,35 +4,70 @@ import (
 	"fmt"
 	"github.com/gomodule/redigo/redis"
 	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
 	"log"
 	"math/rand"
+	"os"
 	"time"
 )
 
-var pool *redis.Pool
+type ConfigRedis struct {
+	Redis InfoRedis `yaml:"redis"`
+}
+
+//数据库账号配置
+type InfoRedis struct {
+	Password string `yaml:"password"`
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
+}
+
+var (
+	pool        *redis.Pool
+	redisConfig ConfigRedis
+)
 
 func init() {
+	path := "./config/db.yml"
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		panic("db config file does not exist")
+	}
+
+	data, _ := ioutil.ReadFile(path)
+	if err := yaml.Unmarshal(data, &redisConfig); err != nil {
+		log.Panic("db config yaml Unmarshal error ")
+	}
+
+	address := getConnURL(&redisConfig.Redis)
+
 	pool = &redis.Pool{
 		MaxIdle:     16,
 		MaxActive:   1024,
 		IdleTimeout: 300,
 		Dial: func() (redis.Conn, error) {
-			//conn, err := redis.Dial("tcp", "localhost:6379")
-			conn, err := redis.Dial("tcp", "119.23.74.49:6379")
+			conn, err := redis.Dial("tcp", address)
 			if err != nil {
 				log.Panic("redis init error")
 				return nil, err
 			}
 
-			//验证密码
-			/*if _, authErr := conn.Do("AUTH", "123456"); authErr != nil {
-				return nil, authErr
-			}*/
+			if redisConfig.Redis.Password != "" {
+				//验证密码
+				if _, authErr := conn.Do("AUTH", "123456"); authErr != nil {
+					return nil, authErr
+				}
+			}
 
-			log.Print("redis init success")
+			log.Print("redis init success at ", address)
 			return conn, err
 		},
 	}
+	pool.Get()
+}
+
+func getConnURL(info *InfoRedis) (url string) {
+	return fmt.Sprintf("%s:%d", info.Host, info.Port)
 }
 
 func DelKey(key string) (interface{}, error) {
