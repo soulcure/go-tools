@@ -134,23 +134,7 @@ func loginHandler(ctx iris.Context) {
 
 func tokenHandler(ctx iris.Context) {
 	tokenString := ctx.GetHeader("token")
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return []byte(SecretKey), nil
-	})
-
-	if err == nil {
-		if token.Valid {
-			logrus.Debug("Token is valid")
-			ctx.Next()
-		} else {
-			ctx.StatusCode(http.StatusUnauthorized)
-			var res models.ProtocolRsp
-			res.Code = models.TokenExpCode
-			res.Msg = models.TokenExpiredErr
-			res.ResponseWriter(ctx)
-			logrus.Error("Token is not valid")
-		}
-	} else {
+	if tokenString == "" {
 		ctx.StatusCode(http.StatusUnauthorized)
 		var res models.ProtocolRsp
 		res.Code = models.NotLoginCode
@@ -158,6 +142,22 @@ func tokenHandler(ctx iris.Context) {
 		res.ResponseWriter(ctx)
 
 		logrus.Error("Unauthorized access to this resource")
+	}
+
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return []byte(SecretKey), nil
+	})
+
+	if err == nil && token.Valid {
+		logrus.Debug("Token is valid")
+		ctx.Next()
+	} else {
+		ctx.StatusCode(http.StatusUnauthorized)
+		var res models.ProtocolRsp
+		res.Code = models.TokenExpCode
+		res.Msg = models.TokenExpiredErr
+		res.ResponseWriter(ctx)
+		logrus.Error("Token is invalid!!!")
 	}
 
 }
@@ -238,16 +238,7 @@ func main() {
 
 	app.Logger().SetLevel("debug")
 
-	config := iris.WithConfiguration(iris.Configuration{
-		DisableInterruptHandler:           false,
-		DisablePathCorrection:             false,
-		EnablePathEscape:                  false,
-		FireMethodNotAllowed:              false,
-		DisableBodyConsumptionOnUnmarshal: false,
-		DisableAutoFireStatusCode:         false,
-		TimeFormat:                        "Mon, 02 Jan 2006 15:04:05 GMT",
-		Charset:                           "UTF-8",
-	})
+	config := iris.WithConfiguration(iris.YAML("./config/iris.yml"))
 
 	if err := app.Run(iris.Server(&http.Server{Addr: ":8880"}), config); err != nil {
 		logrus.Error(err)
