@@ -96,15 +96,8 @@ func loginHandler(ctx iris.Context) {
 
 	if checkLoginFormat(ctx, username, email, password) {
 		if account, err := mysql.AccountLogin(username, email, password); err == nil {
-			var name string
-			if username != "" {
-				name = username
-			} else {
-				name = email
-			}
-
 			token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-				"name": name,
+				"uuid": account.Uuid,
 				"exp":  time.Now().Add(time.Hour * 72).Unix(),
 			})
 
@@ -151,6 +144,10 @@ func tokenHandler(ctx iris.Context) {
 
 	if err == nil && token.Valid {
 		logrus.Debug("Token is valid")
+
+		Claims := token.Claims
+		ctx.Values().Set("uuid", Claims.(jwt.MapClaims)["uuid"])
+
 		ctx.Next()
 	} else {
 		ctx.StatusCode(http.StatusUnauthorized)
