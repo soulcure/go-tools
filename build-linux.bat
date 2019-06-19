@@ -5,7 +5,7 @@ echo install.bat must be run from its folder
 goto end
 
 : ok
-SET dist=main
+SET dist=go
 
 set GOPATH=%~dp0;%GOPATH%
 

@@ -1,7 +1,8 @@
 # generated files
 .idea/
-bin/
 pkg/
+*.exe
+*linux_amd64*
 
 
 # JetBrains files

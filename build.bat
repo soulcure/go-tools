@@ -6,7 +6,7 @@ goto end
 
 : ok
 
-SET dist=main
+SET dist=go_linux_amd64
 
 SET GOPATH=%~dp0;%GOPATH%
 
