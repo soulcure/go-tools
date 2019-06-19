@@ -60,7 +60,7 @@ func init() {
 				}
 			}
 
-			log.Print("redis init success at ", address)
+			log.Print("redis connect to ", address)
 			return conn, err
 		},
 	}
