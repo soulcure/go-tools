@@ -9,7 +9,7 @@ mysql:
 
 # redis账号配置
 redis:
-  password: nuu1234mobile          #
+  password: nuu1234mobile  # null ,nuu1234mobile
   host: localhost    # localhost ,119.23.74.49
   port: 6379
 
