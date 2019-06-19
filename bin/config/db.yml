@@ -1,7 +1,7 @@
 # mysql数据库账号配置
 mysql:
   user: root
-  password: 123456   # 123456 ,  qw84265
+  password: qw84265   # 123456 ,  qw84265
   host: localhost    # localhost ,119.23.74.49
   port: 3306
   database: nuu_db
