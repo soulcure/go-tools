@@ -142,6 +142,7 @@ func tokenHandler(ctx iris.Context) {
 		res.ResponseWriter(ctx)
 
 		logrus.Error("Unauthorized access to this resource")
+		return
 	}
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
