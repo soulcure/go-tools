@@ -102,9 +102,11 @@ func loginHandler(ctx iris.Context) {
 
 	if checkLoginFormat(ctx, username, email, password) {
 		if account, err := mysql.AccountLogin(username, email, password); err == nil {
+
+			exp := time.Now().Add(time.Hour * 72).Unix()
 			token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 				"uuid": account.Uuid,
-				"exp":  time.Now().Add(time.Hour * 72).Unix(),
+				"exp":  exp,
 			})
 
 			if token, err := token.SignedString([]byte(SecretKey)); err == nil {
@@ -114,7 +116,7 @@ func loginHandler(ctx iris.Context) {
 					var res models.ProtocolRsp
 					res.Code = models.OK
 					res.Msg = models.SUCCESS
-					res.Data = &models.LoginRsp{Token: token, Uuid: account.Uuid}
+					res.Data = &models.LoginRsp{Token: token, Uuid: account.Uuid, Expired: exp}
 					res.ResponseWriter(ctx)
 					return
 				} else {
