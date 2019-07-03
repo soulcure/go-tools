@@ -41,14 +41,14 @@ var (
 )
 
 func init() {
-	path := "./config/db.yml"
+	path := "./conf/db.yml"
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		panic("db config file does not exist")
+		panic("db conf file does not exist")
 	}
 
 	data, _ := ioutil.ReadFile(path)
 	if err := yaml.Unmarshal(data, &dbConfig); err != nil {
-		log.Panic("db config yaml Unmarshal error ")
+		log.Panic("db conf yaml Unmarshal error ")
 	}
 
 	dbName := getConnURL(&dbConfig.Mysql)

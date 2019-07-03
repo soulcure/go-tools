@@ -244,7 +244,7 @@ func main() {
 
 	app.Logger().SetLevel("debug")
 
-	config := iris.WithConfiguration(iris.YAML("./config/iris.yml"))
+	config := iris.WithConfiguration(iris.YAML("./conf/iris.yml"))
 
 	if err := app.Run(iris.Addr(":8899"), config); err != nil {
 		logrus.Error(err)
